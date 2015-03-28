@@ -5,12 +5,12 @@
 #include <stdarg.h>
 
 /* Help functions. */
-static void map_calculate_height(map *m, int lower_left_x, int lower_left_y,
+static void map_calculate_height(map_t *m, int lower_left_x, int lower_left_y,
         int upper_right_x, int upper_right_y, int random_range);
 static int random_pm_range(int range);
 static int average(int n_args, ...);
 
-void map_init(map *m, int length, int width, int random_range)
+void map_init(map_t *m, int length, int width, int random_range)
 {
     int i;
 
@@ -36,17 +36,17 @@ void map_init(map *m, int length, int width, int random_range)
     srand(time(NULL));
 }
 
-int map_get_height(map *m, int x, int y)
+int map_get_height(map_t *m, int x, int y)
 {
     return m->height[x][y];
 }
 
-void map_set_water_height(map *m, int new_height)
+void map_set_water_height(map_t *m, int new_height)
 {
     m->water_height = new_height;
 }
 
-void map_square_diamond(map *m)
+void map_square_diamond(map_t *m)
 {
     /* Choose height of initial corners and call map_calculate_height on the
      * map. */
@@ -61,7 +61,7 @@ void map_square_diamond(map *m)
 /* Function assumes the corner points given is already computed.  It then splits
  * the square to smaller squares, computes the corners and call the function
  * recursively. */
-static void map_calculate_height(map *m, int lower_left_x, int lower_left_y,
+static void map_calculate_height(map_t *m, int lower_left_x, int lower_left_y,
         int upper_right_x, int upper_right_y, int random_range)
 {
     int x_mid;
