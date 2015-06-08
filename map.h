@@ -14,12 +14,15 @@ typedef struct {
 void map_init(map_t *m, int length, int width, int random_range);
 
 /* Returns the height of the map in a specific point. */
-int map_get_height(map_t *m, int x, int y);
+int map_get_height(map_t const *m, int x, int y);
 
 /* Set a height for water. */
 void map_set_water_height(map_t *m, int new_height);
 
 /* Run the square diamond algorithm on the map to generate a terrain. */
 void map_square_diamond(map_t *m);
+
+/* Save the map as a png image. */
+void save_as_png(map_t const *m, char const *filename);
 
 #endif
