@@ -77,7 +77,7 @@ void map_square_diamond(map_t *m)
     map_calculate_height(m, 0, 0, m->width-1, m->length-1, m->random_range);
 }
 
-void save_as_png(map_t const *m, char const *filename)
+void map_save_as_png(map_t const *m, char const *filename)
 {
     bitmap_t bitmap;
     int x;
@@ -86,9 +86,8 @@ void save_as_png(map_t const *m, char const *filename)
     pixel_t *pixel;
 
     /* Create an image. */
-
-    bitmap.width = m->length;
-    bitmap.height = m->width;
+    bitmap.width = m->width;
+    bitmap.height = m->length;
 
     bitmap.pixels = calloc(sizeof(pixel_t), bitmap.width * bitmap.height);
 
