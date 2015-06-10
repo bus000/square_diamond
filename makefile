@@ -1,5 +1,5 @@
 CC      =gcc
-CFLAGS  =-Wall -ansi -Werror
+CFLAGS  =-Wall -Werror
 SOURCES =$(wildcard *.c)$
 OBJECTS =$(SOURCES:.c=.o)$
 TARGET  =square_diamond
