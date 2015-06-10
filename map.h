@@ -23,6 +23,6 @@ void map_set_water_height(map_t *m, int new_height);
 void map_square_diamond(map_t *m);
 
 /* Save the map as a png image. */
-void save_as_png(map_t const *m, char const *filename);
+void map_save_as_png(map_t const *m, char const *filename);
 
 #endif
