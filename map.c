@@ -60,6 +60,11 @@ int map_get_height(map_t const *m, int x, int y)
     return m->height[x][y];
 }
 
+void map_set_height(map_t *m, int x, int y, int value)
+{
+    m->height[x][y] = value;
+}
+
 void map_set_water_height(map_t *m, int new_height)
 {
     m->water_height = new_height;
@@ -113,26 +118,23 @@ static void map_calculate_height(map_t *m, int lower_left_x, int lower_left_y,
 {
     int x_mid;
     int y_mid;
+    int lower_left, lower_right, upper_left, upper_right;
 
     x_mid = average(2, upper_right_x, lower_left_x);
     y_mid = average(2, upper_right_y, lower_left_y);
 
+    lower_left = map_get_height(m, lower_left_x, lower_left_y);
+    lower_right = map_get_height(m, upper_right_x, lower_left_y);
+    upper_left = map_get_height(m, lower_left_x, upper_right_y);
+    upper_right = map_get_height(m, upper_right_x, upper_right_y);
+
     /* Update midpoints as the average of surrounding points. */
-    m->height[x_mid][lower_left_y] = average(2, m->height[lower_left_x]
-            [lower_left_y], m->height[upper_right_x][lower_left_y]);
-
-    m->height[lower_left_x][y_mid] = average(2, m->height[lower_left_x]
-            [lower_left_y], m->height[lower_left_x][upper_right_y]);
-
-    m->height[x_mid][upper_right_y] = average(2, m->height[lower_left_x]
-            [upper_right_y], m->height[upper_right_x][upper_right_y]);
-
-    m->height[upper_right_x][y_mid] = average(2, m->height[upper_right_x]
-            [upper_right_y], m->height[upper_right_x][lower_left_y]);
-
-    m->height[x_mid][y_mid] = average(4, m->height[lower_left_x][lower_left_y],
-            m->height[lower_left_x][upper_right_y], m->height[upper_right_x]
-            [upper_right_y], m->height[upper_right_x][lower_left_y]);
+    map_set_height(m, x_mid, lower_left_y, AVERAGE(lower_left, lower_right));
+    map_set_height(m, lower_left_x, y_mid, AVERAGE(lower_left, upper_left));
+    map_set_height(m, x_mid, upper_right_y, AVERAGE(upper_left, upper_right));
+    map_set_height(m, upper_right_x, y_mid, AVERAGE(lower_right, upper_right));
+    map_set_height(m, x_mid, y_mid, average(4, lower_left, upper_left,
+                lower_right, upper_right));
 
     /* Add error to midpoint height. */
     m->height[x_mid][y_mid] += random_pm_range(random_range);
@@ -157,10 +159,7 @@ static void map_calculate_height(map_t *m, int lower_left_x, int lower_left_y,
 
 static int random_pm_range(int range)
 {
-    if (range == 0)
-        return 0;
-
-    return (rand() % (2 * range)) - range;
+    return (range == 0) ? 0 : (rand() % (2 * range)) - range;
 }
 
 static int average(int n_args, ...)
