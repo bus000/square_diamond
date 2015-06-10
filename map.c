@@ -1,11 +1,11 @@
 #include "map.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <time.h>
-#include <stdarg.h>
-#include <inttypes.h>
-#include <stdio.h>
-#include <png.h>
+#include <stdlib.h> /* malloc, calloc, free. */
+#include <assert.h> /* assert. */
+#include <time.h> /* time. */
+#include <stdarg.h> /* va_start, va_arg, va_end. */
+#include <inttypes.h> /* uint_8. */
+#include <stdio.h> /* FILE, fopen, fclose. */
+#include <png.h> /* png_create_write_struct, png_set_IHDR, png_malloc */
 
 /* Help structs. */
 typedef struct {
@@ -26,7 +26,7 @@ static void map_calculate_height(map_t *m, int lower_left_x, int lower_left_y,
 static int random_pm_range(int range);
 static int average(int n_args, ...);
 static int pix(int value, int max);
-static int save_png_to_file(bitmap_t *bitmap, const char *path);
+static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
 
 void map_init(map_t *m, int length, int width, int random_range)
@@ -179,7 +179,7 @@ static int average(int n_args, ...)
 }
 
 /* http://www.lemoda.net/c/write-png/ */
-static int save_png_to_file(bitmap_t *bitmap, const char *path)
+static int save_png_to_file(bitmap_t *bitmap, char const *path)
 {
     FILE * fp;
     png_structp png_ptr = NULL;
