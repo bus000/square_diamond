@@ -1,11 +1,11 @@
 #include "map.h"
 #include <stdlib.h> /* malloc, calloc, free. */
-#include <assert.h> /* assert. */
 #include <time.h> /* time. */
 #include <stdarg.h> /* va_start, va_arg, va_end. */
 #include <inttypes.h> /* uint_8. */
 #include <stdio.h> /* FILE, fopen, fclose. */
 #include <png.h> /* png_create_write_struct, png_set_IHDR, png_malloc */
+#include <errno.h> /* ENOMEM, EINVAL. */
 
 /* Help structs. */
 typedef struct {
@@ -29,23 +29,32 @@ static int pix(int value, int max);
 static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
 
-void map_init(map_t *m, int length, int width, int random_range)
+int map_init(map_t *m, int length, int width, int random_range, int max_height)
 {
     int i;
+
+    /* Error handling. */
+    if (random_range >= max_height || length <= 0 || width <= 0 ||
+            random_range <= 0)
+        return EINVAL;
 
     /* calloc initializes all to 0. */
     m->height = calloc(width, sizeof(int *));
 
-    assert(m->height != NULL);
+    if (m->height == NULL)
+        return ENOMEM;
 
     for (i = 0; i < width; i++) {
         m->height[i] = calloc(length, sizeof(int));
-        assert(m->height[i] != NULL);
+        /* TODO, handle half allocated memory. */
+        if (m->height[i] == NULL)
+            return ENOMEM;
     }
 
     m->length = length;
     m->width = width;
     m->random_range = random_range;
+    m->max = max_height;
 
     /* Set the waterlevel so no water is shown unless a user call
      * map_set_water_height. */
@@ -53,6 +62,8 @@ void map_init(map_t *m, int length, int width, int random_range)
 
     /* Set the random number generator. */
     srand(time(NULL));
+
+    return 0;
 }
 
 int map_get_height(map_t const *m, int x, int y)
