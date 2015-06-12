@@ -7,13 +7,14 @@ typedef struct {
     int width;        /* Width of plane. */
     int random_range; /* The range the height can change. */
     int water_height; /* The height of any water on the map. */
+    int max;          /* The maximum height on the map. */
 } map_t;
 
 #define AVERAGE(x, y) ((x + y) / 2)
 
 /* Initializes the map, the higher the random range, the more hilly the terrain
  * will be. */
-void map_init(map_t *m, int length, int width, int random_range);
+int map_init(map_t *m, int length, int width, int random_range, int max_heigth);
 
 /* Returns the height of the map in a specific point. */
 int map_get_height(map_t const *m, int x, int y);
