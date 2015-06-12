@@ -2,24 +2,46 @@
 #include <stdlib.h> /* exit, strtol. */
 #include <ctype.h> /* isspace. */
 #include <string.h> /* strdup. */
+#include <errno.h> /* EINVAL, ENOMEM. */
 #include "map.h"
 
 /* Help functions. */
-void handle_arguments(int argc, char const *argv[]);
-int is_number(char const *string);
+static void handle_arguments(int argc, char const *argv[]);
+static int is_number(char const *string);
+static void test_input(long length, long width, long random_range, long max);
 
 static long length = 1000;
 static long width = 1000;
 static long random_range = 1000;
+static long max = 2000;
 static char *filename = "out.png";
 
 int main(int argc, char const *argv[])
 {
     map_t map;
+    int ret_val;
 
     handle_arguments(argc, argv);
 
-    map_init(&map, length, width, random_range);
+    switch (map_init(&map, length, width, random_range, max)) {
+        case 0:
+            /* Continue the program. */
+            break;
+        case EINVAL:
+            fprintf(stderr, "map_init failed with error code EINVAL\n");
+            exit(EXIT_SUCCESS);
+            break;
+        case ENOMEM:
+            fprintf(stderr, "map_init failed with error code ENOMEM\n");
+            exit(EXIT_SUCCESS);
+            break;
+        default:
+            fprintf(stderr, "map_init failed with unknown error\n");
+            exit(EXIT_SUCCESS);
+    }
+
+    if ((ret_val = map_init(&map, length, width, random_range, max)) != 0) {
+    }
     map_square_diamond(&map);
     map_save_as_png(&map, filename);
 
@@ -29,7 +51,7 @@ int main(int argc, char const *argv[])
 }
 
 /* Set the internal variables as the values maybe given by the user. */
-void handle_arguments(int argc, char const *argv[])
+static void handle_arguments(int argc, char const *argv[])
 {
     int next_arg = 0;
 
@@ -75,6 +97,19 @@ void handle_arguments(int argc, char const *argv[])
                     }
 
                     break;
+                case 'm':
+                    if (next_arg == argc-1) {
+                        fprintf(stderr, "Expecting number after -m\n");
+                        exit(EXIT_SUCCESS);
+                    } else if (!is_number(argv[next_arg+1])) {
+                        fprintf(stderr, "Expecting number after -m\n");
+                        exit(EXIT_SUCCESS);
+                    } else {
+                        max = strtol(argv[next_arg+1], NULL, 10);
+                        next_arg += 1;
+                    }
+
+                    break;
                 default:
                     fprintf(stderr, "Error, unknown switch %s\n",
                             argv[next_arg]);
@@ -89,9 +124,11 @@ void handle_arguments(int argc, char const *argv[])
             }
         }
     }
+
+    test_input(length, width, random_range, max);
 }
 
-int is_number(char const *string)
+static int is_number(char const *string)
 {
     /* Skip whitespace. */
     while (isspace(*string) && *string != '\0')
@@ -109,4 +146,24 @@ int is_number(char const *string)
     }
 
     return 1;
+}
+
+static void test_input(long length, long width, long random_range, long max)
+{
+    if (length <= 0) {
+        fprintf(stderr, "Length should be greater than 0\n");
+        exit(EXIT_SUCCESS);
+    } else if (width <= 0) {
+        fprintf(stderr, "Width should be greater than 0\n");
+        exit(EXIT_SUCCESS);
+    } else if (random_range <= 0) {
+        fprintf(stderr, "Random range should be greater than 0\n");
+        exit(EXIT_SUCCESS);
+    } else if (max <= 0) {
+        fprintf(stderr, "Max should be greater than 0\n");
+        exit(EXIT_SUCCESS);
+    } else if (random_range >= max) {
+        fprintf(stderr, "Random range should be smaller than max 0\n");
+        exit(EXIT_SUCCESS);
+    }
 }
