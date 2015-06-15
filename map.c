@@ -28,31 +28,19 @@ static int average(int n_args, ...);
 static int pix(int value, int max);
 static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
+static int ** alloc_height_arr(size_t size);
+static void handle_partial_alloc(int **arr, int last_alloced);
 
-int map_init(map_t *m, int length, int width, int random_range, int max_height)
+int map_init(map_t *m, size_t side_len, size_t random_range, size_t max_height)
 {
-    int i;
-
     /* Error handling. */
-    if (random_range >= max_height || length <= 0 || width <= 0 ||
-            random_range <= 0)
+    if (random_range >= max_height || side_len <= 0 || random_range <= 0)
         return EINVAL;
 
-    /* calloc initializes all to 0. */
-    m->height = calloc(width, sizeof(int *));
-
-    if (m->height == NULL)
+    if ((m->height = alloc_height_arr(side_len)) == NULL)
         return ENOMEM;
 
-    for (i = 0; i < width; i++) {
-        m->height[i] = calloc(length, sizeof(int));
-        /* TODO, handle half allocated memory. */
-        if (m->height[i] == NULL)
-            return ENOMEM;
-    }
-
-    m->length = length;
-    m->width = width;
+    m->side_len = side_len;
     m->random_range = random_range;
     m->max = max_height;
 
@@ -86,39 +74,45 @@ void map_square_diamond(map_t *m)
     /* Choose height of initial corners and call map_calculate_height on the
      * map. */
     m->height[0][0] = random_pm_range(m->random_range);
-    m->height[m->width-1][0] = random_pm_range(m->random_range);
-    m->height[m->width-1][m->length-1] = random_pm_range(m->random_range);
-    m->height[0][m->length-1] = random_pm_range(m->random_range);
+    m->height[m->side_len-1][0] = random_pm_range(m->random_range);
+    m->height[m->side_len-1][m->side_len-1] = random_pm_range(m->random_range);
+    m->height[0][m->side_len-1] = random_pm_range(m->random_range);
 
-    map_calculate_height(m, 0, 0, m->width-1, m->length-1, m->random_range);
+    map_calculate_height(m, 0, 0, m->side_len-1, m->side_len-1, m->random_range);
 }
 
-void map_save_as_png(map_t const *m, char const *filename)
+int map_save_as_png(map_t const *m, char const *filename, size_t height,
+        size_t width)
 {
     bitmap_t bitmap;
     int x;
     int y;
-    int height;
+    int tmp_height;
     pixel_t *pixel;
 
+    if (height > m->side_len || width > m->side_len)
+        return EINVAL;
+
     /* Create an image. */
-    bitmap.width = m->width;
-    bitmap.height = m->length;
+    bitmap.width = width;
+    bitmap.height = height;
 
     bitmap.pixels = calloc(sizeof(pixel_t), bitmap.width * bitmap.height);
 
     for (y = 0; y < bitmap.height; y++) {
         for (x = 0; x < bitmap.width; x++) {
-            height = map_get_height(m, x, y) + m->random_range;
+            tmp_height = map_get_height(m, x, y) + m->random_range;
 
             pixel = pixel_at(&bitmap, x, y);
-            pixel->red = pix(height, m->random_range * 2);
-            pixel->green = pix(height, m->random_range * 2);
-            pixel->blue = pix(height, m->random_range * 2);
+            pixel->red = pix(tmp_height, m->random_range * 2);
+            pixel->green = pix(tmp_height, m->random_range * 2);
+            pixel->blue = pix(tmp_height, m->random_range * 2);
         }
     }
 
     save_png_to_file(&bitmap, filename);
+
+    return 0;
 }
 
 /* Function assumes the corner points given is already computed.  It then splits
@@ -190,6 +184,7 @@ static int average(int n_args, ...)
 }
 
 /* http://www.lemoda.net/c/write-png/ */
+/* TODO: Add better handling of errors. */
 static int save_png_to_file(bitmap_t *bitmap, char const *path)
 {
     FILE * fp;
@@ -202,10 +197,12 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path)
     int depth = 8;
 
     fp = fopen (path, "wb");
-    if (! fp)
+    if (!fp) {
+        status = errno;
         goto fopen_failed;
+    }
 
-    png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (png_ptr == NULL)
         goto png_create_write_struct_failed;
 
@@ -246,9 +243,9 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path)
 
  png_failure:
  png_create_info_struct_failed:
-    png_destroy_write_struct (&png_ptr, &info_ptr);
+    png_destroy_write_struct(&png_ptr, &info_ptr);
  png_create_write_struct_failed:
-    fclose (fp);
+    fclose(fp);
  fopen_failed:
     return status;
 }
@@ -263,4 +260,37 @@ static int pix(int value, int max)
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y)
 {
     return bitmap->pixels + bitmap->width * y + x;
+}
+
+static int ** alloc_height_arr(size_t size)
+{
+    int i;
+    int **arr = calloc(size, sizeof(int *));
+
+    if (arr == NULL)
+        NULL;
+
+    for (i = 0; i < size; i++) {
+        arr[i] = calloc(size, sizeof(int));
+        if (arr[i] == NULL) {
+            handle_partial_alloc(arr, i - 1);
+            return NULL;
+        }
+    }
+
+    return arr;
+}
+
+static void handle_partial_alloc(int **arr, int last_alloced)
+{
+    int i;
+
+    if (last_alloced < 0)
+        return;
+
+    for (i = 0; i < last_alloced; i++) {
+        free(arr[i]);
+    }
+
+    free(arr);
 }
