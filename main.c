@@ -2,13 +2,16 @@
 #include <stdlib.h> /* exit, strtol. */
 #include <ctype.h> /* isspace. */
 #include <string.h> /* strdup. */
-#include <errno.h> /* EINVAL, ENOMEM. */
+#include <errno.h> /* EINVAL, ENOMEM, strerror. */
 #include "map.h"
+
+#define MAX(x, y) ((x) < (y) ? (y) : (x))
 
 /* Help functions. */
 static void handle_arguments(int argc, char const *argv[]);
 static int is_number(char const *string);
 static void test_input(long length, long width, long random_range, long max);
+static void print_err_exit(char *fun, int num);
 
 static long length = 1000;
 static long width = 1000;
@@ -19,31 +22,18 @@ static char *filename = "out.png";
 int main(int argc, char const *argv[])
 {
     map_t map;
+    int side_len;
     int ret_val;
 
     handle_arguments(argc, argv);
+    side_len = MAX(length, width);
 
-    switch (map_init(&map, length, width, random_range, max)) {
-        case 0:
-            /* Continue the program. */
-            break;
-        case EINVAL:
-            fprintf(stderr, "map_init failed with error code EINVAL\n");
-            exit(EXIT_SUCCESS);
-            break;
-        case ENOMEM:
-            fprintf(stderr, "map_init failed with error code ENOMEM\n");
-            exit(EXIT_SUCCESS);
-            break;
-        default:
-            fprintf(stderr, "map_init failed with unknown error\n");
-            exit(EXIT_SUCCESS);
-    }
+    if ((ret_val = map_init(&map, side_len, random_range, max)) != 0)
+        print_err_exit("map_init", ret_val);
 
-    if ((ret_val = map_init(&map, length, width, random_range, max)) != 0) {
-    }
     map_square_diamond(&map);
-    map_save_as_png(&map, filename);
+    if ((ret_val = map_save_as_png(&map, filename, length, width)) != 0)
+        print_err_exit("map_save_as_png", ret_val);
 
     printf("Map written to the file %s\n", filename);
 
@@ -166,4 +156,11 @@ static void test_input(long length, long width, long random_range, long max)
         fprintf(stderr, "Random range should be smaller than max 0\n");
         exit(EXIT_SUCCESS);
     }
+}
+
+static void print_err_exit(char *fun, int num)
+{
+    fprintf(stderr, "%s failed with: %d %s\n", fun, errno, strerror(errno));
+
+    exit(EXIT_SUCCESS);
 }
