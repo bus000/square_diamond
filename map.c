@@ -30,7 +30,9 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
 static int ** alloc_height_arr(size_t size);
 static void handle_partial_alloc(int **arr, int last_alloced);
+static void calculate_means(map_t *m);
 
+/* TODO: implement water. */
 int map_init(map_t *m, size_t side_len, size_t random_range, size_t max_height)
 {
     /* Error handling. */
@@ -54,14 +56,14 @@ int map_init(map_t *m, size_t side_len, size_t random_range, size_t max_height)
     return 0;
 }
 
-int map_get_height(map_t const *m, int x, int y)
+int map_get_height(map_t const *m, point_t pos)
 {
-    return m->height[x][y];
+    return m->height[pos.x][pos.y];
 }
 
-void map_set_height(map_t *m, int x, int y, int value)
+void map_set_height(map_t *m, point_t pos, int value)
 {
-    m->height[x][y] = value;
+    m->height[pos.x][pos.y] = value;
 }
 
 void map_set_water_height(map_t *m, int new_height)
@@ -113,6 +115,54 @@ int map_save_as_png(map_t const *m, char const *filename, size_t height,
     save_png_to_file(&bitmap, filename);
 
     return 0;
+}
+
+point_t map_get_pos(pos_t pos)
+{
+    switch (pos) {
+        case TOP_LEFT:
+            return {0, side_len-1};
+        case TOP_RIGHT:
+            return {side_len-1, side_len-1};
+        case BOTTOM_LEFT:
+            return {0, 0};
+        case BOTTOM_RIGHT:
+            return {0, side_len-1};
+        case MIDDLE:
+            return {side_len/2, side_len/2};
+        case TOP_MIDDLE:
+            return {side_len/2, side_len-1};
+        case LEFT_MIDDLE:
+            return {0, side_len/2};
+        case RIGHT_MIDDLE:
+            return {side_len-1, side_len/2};
+        case BOTTOM_MIDDLE:
+            return {side_len/2, 0};
+        default:
+            return {-1, -1};
+    }
+}
+
+typedef struct {
+    map_t *map;
+    int lower_left_x;
+    int lower_left_y;
+    int upper_rigth_x;
+    int upper_right_y;
+    int random_range;
+}
+
+static void * map_calculate_height(void *map)
+{
+    map_t *m = (map_t *) map;
+/*    point_t top_left = map_get_pos(TOP_LEFT);*/
+    /*point_t top_right = map_get_pos(TOP_RIGHT);*/
+    /*point_t bottom_left = map_get_pos(BOTTOM_LEFT);*/
+    /*point_t bottom_right = map_get_pos(BOTTOM_RIGHT);*/
+    /*point_t middle = map_get_pos(MIDDLE);*/
+    /*point_t left_middle = map_get_pos(LEFT_MIDDLE);*/
+
+    calculate_means(m);
 }
 
 /* Function assumes the corner points given is already computed.  It then splits
@@ -288,9 +338,32 @@ static void handle_partial_alloc(int **arr, int last_alloced)
     if (last_alloced < 0)
         return;
 
-    for (i = 0; i < last_alloced; i++) {
+    for (i = 0; i < last_alloced; i++)
         free(arr[i]);
-    }
 
     free(arr);
+}
+
+static void calculate_means(map_t *m)
+{
+    int value;
+    point_t top_left = map_get_pos(TOP_LEFT);
+    point_t top_right = map_get_pos(TOP_RIGHT);
+    point_t bottom_left = map_get_pos(BOTTOM_LEFT);
+    point_t bottom_right = map_get_pos(BOTTOM_RIGHT);
+    point_t middle = map_get_pos(MIDDLE);
+
+    point_t left_middle = map_get_pos(LEFT_MIDDLE);
+    point_t right_middle = map_get_pos(RIGHT_MIDDLE);
+    point_t top_middle = map_get_pos(TOP_MIDDLE);
+    point_t bottom_middle = map_get_pos(BOTTOM_MIDDLE);
+    point_t middle = map_get_pos(MIDDLE);
+
+    value = average(2, map_get_height(m, bottom_left),
+            map_get_height(m, top_left));
+    map_set_height(m, left_middle, value);
+
+    value = average(2, map_get_height(m, bottom_right),
+            map_get_height(m, top_right));
+    map_set_height(m, right_middle, value);
 }
