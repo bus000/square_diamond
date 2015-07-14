@@ -29,6 +29,7 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
 static int ** alloc_height_arr(size_t size);
 static void handle_partial_alloc(int **arr, int last_alloced);
+static size_t nearest_greater_two_power(size_t n);
 static void map_top_right(map_t *m);
 static void map_top_left(map_t *m);
 static void map_bottom_right(map_t *m);
