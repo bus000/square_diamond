@@ -10,7 +10,7 @@
 /* Help functions. */
 static void handle_arguments(int argc, char const *argv[]);
 static int is_number(char const *string);
-static void test_input(long length, long width, long random_range, long max);
+static void test_input(long length, long width, long random_range);
 static void print_err_exit(char *fun, int num);
 static int find_two_greater(int n);
 
@@ -102,7 +102,7 @@ static void handle_arguments(int argc, char const *argv[])
         }
     }
 
-    test_input(length, width, random_range, max);
+    test_input(length, width, random_range);
 }
 
 static int is_number(char const *string)
@@ -125,7 +125,7 @@ static int is_number(char const *string)
     return 1;
 }
 
-static void test_input(long length, long width, long random_range, long max)
+static void test_input(long length, long width, long random_range)
 {
     if (length <= 0) {
         fprintf(stderr, "Length should be greater than 0\n");
@@ -135,12 +135,6 @@ static void test_input(long length, long width, long random_range, long max)
         exit(EXIT_SUCCESS);
     } else if (random_range <= 0) {
         fprintf(stderr, "Random range should be greater than 0\n");
-        exit(EXIT_SUCCESS);
-    } else if (max <= 0) {
-        fprintf(stderr, "Max should be greater than 0\n");
-        exit(EXIT_SUCCESS);
-    } else if (random_range >= max) {
-        fprintf(stderr, "Random range should be smaller than max 0\n");
         exit(EXIT_SUCCESS);
     }
 }
