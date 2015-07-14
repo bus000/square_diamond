@@ -21,8 +21,7 @@ typedef struct  {
 } bitmap_t;
 
 /* Help functions. */
-static void map_calculate_height(map_t *m, int lower_left_x, int lower_left_y,
-        int upper_right_x, int upper_right_y, int random_range);
+static void map_calculate_height(map_t *m);
 static int random_pm_range(int range);
 static int average(int n_args, ...);
 static int pix(int value, int max);
@@ -91,6 +90,53 @@ void map_square_diamond(map_t *m)
     map_calculate_height(m);
 }
 
+static void map_calculate_height(map_t *m)
+{
+    if (m->side_len <= 1 || m->random_range <= 1)
+        return;
+
+    calculate_means(m);
+    add_error_mid(m);
+
+    map_top_right(m);
+    map_calculate_height(m);
+    map_restore_top_rigth(m);
+
+    map_top_left(m);
+    map_calculate_height(m);
+    map_restore_top_left(m);
+
+    map_bottom_right(m);
+    map_calculate_height(m);
+    map_restore_bottom_right(m);
+
+    map_bottom_left(m);
+    map_calculate_height(m);
+    map_restore_bottom_left(m);
+}
+
+static void calculate_means(map_t *m)
+{
+    int x_mid, y_mid, lower_left, lower_right, upper_left, upper_right;
+    size_t side_len = m->side_len - 1;
+
+    x_mid = m->side_len / 2;
+    y_mid = m->side_len / 2;
+
+    lower_left = map_get_height(m, 0, 0);
+    lower_right = map_get_height(m, side_len, 0);
+    upper_left = map_get_height(m, 0, side_len);
+    upper_right = map_get_height(m, side_len, side_len);
+
+    /* Update midpoints as the average of surrounding points. */
+    map_set_height(m, x_mid, 0, AVERAGE(lower_left, lower_right));
+    map_set_height(m, 0, y_mid, AVERAGE(lower_left, upper_left));
+    map_set_height(m, x_mid, side_len, AVERAGE(upper_left, upper_right));
+    map_set_height(m, side_len, y_mid, AVERAGE(lower_right, upper_right));
+    map_set_height(m, x_mid, y_mid, average(4, lower_left, upper_left,
+                lower_right, upper_right));
+}
+
 int map_save_as_png(map_t const *m, char const *filename, size_t height,
         size_t width)
 {
@@ -131,53 +177,6 @@ inline int map_shallow_cmp(map_t const *m1, map_t const *m2)
         m1->random_range == m2->random_range ||
         m1->water_height == m2->water_height ||
         m1->max == m2->max;
-}
-
-/* Function assumes the corner points given is already computed.  It then splits
- * the square to smaller squares, computes the corners and call the function
- * recursively. */
-static void map_calculate_height(map_t *m, int lower_left_x, int lower_left_y,
-        int upper_right_x, int upper_right_y, int random_range)
-{
-    int x_mid;
-    int y_mid;
-    int lower_left, lower_right, upper_left, upper_right;
-
-    x_mid = average(2, upper_right_x, lower_left_x);
-    y_mid = average(2, upper_right_y, lower_left_y);
-
-    lower_left = map_get_height(m, lower_left_x, lower_left_y);
-    lower_right = map_get_height(m, upper_right_x, lower_left_y);
-    upper_left = map_get_height(m, lower_left_x, upper_right_y);
-    upper_right = map_get_height(m, upper_right_x, upper_right_y);
-
-    /* Update midpoints as the average of surrounding points. */
-    map_set_height(m, x_mid, lower_left_y, AVERAGE(lower_left, lower_right));
-    map_set_height(m, lower_left_x, y_mid, AVERAGE(lower_left, upper_left));
-    map_set_height(m, x_mid, upper_right_y, AVERAGE(upper_left, upper_right));
-    map_set_height(m, upper_right_x, y_mid, AVERAGE(lower_right, upper_right));
-    map_set_height(m, x_mid, y_mid, average(4, lower_left, upper_left,
-                lower_right, upper_right));
-
-    /* Add error to midpoint height. */
-    m->height[x_mid][y_mid] += random_pm_range(random_range);
-
-    /* Recursive call on all subsquares with a size greater than 1. */
-    if (lower_left_x + 1 < x_mid || lower_left_y + 1 < y_mid)
-        map_calculate_height(m, lower_left_x, lower_left_y, x_mid, y_mid,
-                random_range / 2);
-
-    if (lower_left_x + 1 < x_mid || y_mid + 1 < upper_right_y)
-        map_calculate_height(m, lower_left_x, y_mid, x_mid, upper_right_y,
-                random_range / 2);
-
-    if (x_mid + 1 < upper_right_x || y_mid + 1 < upper_right_y)
-        map_calculate_height(m, x_mid, y_mid, upper_right_x, upper_right_y,
-                random_range / 2);
-
-    if (x_mid + 1 < upper_right_x || lower_left_y + 1 < y_mid)
-        map_calculate_height(m, x_mid, lower_left_y, upper_right_x, y_mid,
-                random_range / 2);
 }
 
 static int random_pm_range(int range)
