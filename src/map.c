@@ -49,7 +49,7 @@ int map_init(map_t *m, size_t side_len, size_t random_range, size_t max_height)
     if (random_range >= max_height || side_len <= 0 || random_range <= 0)
         return EINVAL;
 
-    act_side_len = nearest_greater_two_power(side_len);
+    act_side_len = nearest_greater_two_power(side_len) + 1;
 
     if ((m->height = alloc_height_arr(act_side_len)) == NULL)
         return ENOMEM;
