@@ -290,7 +290,7 @@ static int ** alloc_height_arr(size_t size)
     int **arr = calloc(size, sizeof(int *));
 
     if (arr == NULL)
-        NULL;
+        return NULL;
 
     for (i = 0; i < size; i++) {
         arr[i] = calloc(size, sizeof(int));
