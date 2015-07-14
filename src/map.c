@@ -312,3 +312,94 @@ static void handle_partial_alloc(int **arr, int last_alloced)
 
     free(arr);
 }
+
+static size_t nearest_greater_two_power(size_t n)
+{
+    size_t a = 1;
+
+    while (a < n)
+        a *= 2;
+
+    return a;
+}
+
+static void map_top_right(map_t *m)
+{
+    int i;
+
+    m->random_range /= 2;
+    m->side_len /= 2;
+    m->height += m->side_len;
+
+    for (i = 0; i < m->side_len; i++)
+        m->height[i] += m->side_len;
+}
+
+static void map_restore_top_rigth(map_t *m)
+{
+    int i;
+
+    for (i = 0; i < m->side_len; i++)
+        m->height[i] -= m->side_len;
+
+    m->height -= m->side_len;
+    m->random_range *= 2;
+    m->side_len *= 2;
+}
+
+static void map_top_left(map_t *m)
+{
+    int i;
+
+    m->random_range /= 2;
+    m->side_len /= 2;
+
+    for (i = 0; i < m->side_len; i ++)
+        m->height[i] += m->side_len;
+}
+
+static void map_restore_top_left(map_t *m)
+{
+    int i;
+
+    for (i = 0; i < m->side_len; i++)
+        m->height[i] -= m->side_len;
+
+    m->random_range *= 2;
+    m->side_len *= 2;
+}
+
+static void map_bottom_right(map_t *m)
+{
+    m->random_range /= 2;
+    m->side_len /= 2;
+    m->height += m->side_len;
+}
+
+static void map_restore_bottom_right(map_t *m)
+{
+    m->height -= m->side_len;
+    m->random_range *= 2;
+    m->side_len *= 2;
+}
+
+static void map_bottom_left(map_t *m)
+{
+    m->random_range /= 2;
+    m->side_len /= 2;
+}
+
+static void map_restore_bottom_left(map_t *m)
+{
+    m->random_range *= 2;
+    m->side_len *= 2;
+}
+
+static inline void add_error_mid(map_t *m)
+{
+    int half_side = m->side_len / 2;
+    int new_height = map_get_height(m, half_side, half_side) +
+        random_pm_range(m->random_range);
+
+    map_set_height(m, half_side, half_side, new_height);
+}
