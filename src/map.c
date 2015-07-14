@@ -115,7 +115,6 @@ int map_save_as_png(map_t const *m, char const *filename, size_t height,
     return 0;
 }
 
-
 inline int map_shallow_cmp(map_t const *m1, map_t const *m2)
 {
     return m1->side_len == m2->side_len ||
