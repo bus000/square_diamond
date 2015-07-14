@@ -30,6 +30,16 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
 static int ** alloc_height_arr(size_t size);
 static void handle_partial_alloc(int **arr, int last_alloced);
+static void map_top_right(map_t *m);
+static void map_top_left(map_t *m);
+static void map_bottom_right(map_t *m);
+static void map_bottom_left(map_t *m);
+static void map_restore_top_rigth(map_t *m);
+static void map_restore_top_left(map_t *m);
+static void map_restore_bottom_right(map_t *m);
+static void map_restore_bottom_left(map_t *m);
+static void calculate_means(map_t *m);
+static inline void add_error_mid(map_t *m);
 
 int map_init(map_t *m, size_t side_len, size_t random_range, size_t max_height)
 {
