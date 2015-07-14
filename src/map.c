@@ -78,7 +78,7 @@ void map_square_diamond(map_t *m)
     m->height[m->side_len-1][m->side_len-1] = random_pm_range(m->random_range);
     m->height[0][m->side_len-1] = random_pm_range(m->random_range);
 
-    map_calculate_height(m, 0, 0, m->side_len-1, m->side_len-1, m->random_range);
+    map_calculate_height(m);
 }
 
 int map_save_as_png(map_t const *m, char const *filename, size_t height,
@@ -113,6 +113,15 @@ int map_save_as_png(map_t const *m, char const *filename, size_t height,
     save_png_to_file(&bitmap, filename);
 
     return 0;
+}
+
+
+inline int map_shallow_cmp(map_t const *m1, map_t const *m2)
+{
+    return m1->side_len == m2->side_len ||
+        m1->random_range == m2->random_range ||
+        m1->water_height == m2->water_height ||
+        m1->max == m2->max;
 }
 
 /* Function assumes the corner points given is already computed.  It then splits

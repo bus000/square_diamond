@@ -33,4 +33,8 @@ void map_square_diamond(map_t *m);
 int map_save_as_png(map_t const *m, char const *filename, size_t height,
         size_t width);
 
+/* Compare two map_t's by comparing all metadata about the maps. The function
+ * does not actually compare all points on the map. */
+inline int map_shallow_cmp(map_t const *m1, map_t const *m2);
+
 #endif
