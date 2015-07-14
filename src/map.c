@@ -47,7 +47,7 @@ int map_init(map_t *m, size_t size, size_t random_range, size_t max_height)
     if (random_range >= max_height || size <= 0 || random_range <= 0)
         return EINVAL;
 
-    m->side_len = pow_2(size);
+    m->side_len = pow_2(size) + 1;
     m->random_range = random_range;
     m->max = max_height;
 
