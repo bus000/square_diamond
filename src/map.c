@@ -29,7 +29,6 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
 static int ** alloc_height_arr(size_t size);
 static void handle_partial_alloc(int **arr, int last_alloced);
-static size_t nearest_greater_two_power(size_t n);
 static void map_top_right(map_t *m);
 static void map_top_left(map_t *m);
 static void map_bottom_right(map_t *m);
@@ -40,23 +39,20 @@ static void map_restore_bottom_right(map_t *m);
 static void map_restore_bottom_left(map_t *m);
 static void calculate_means(map_t *m);
 static inline void add_error_mid(map_t *m);
+static inline int pow_2(int n);
 
-int map_init(map_t *m, size_t side_len, size_t random_range, size_t max_height)
+int map_init(map_t *m, size_t size, size_t random_range, size_t max_height)
 {
-    size_t act_side_len;
-
     /* Error handling. */
-    if (random_range >= max_height || side_len <= 0 || random_range <= 0)
+    if (random_range >= max_height || size <= 0 || random_range <= 0)
         return EINVAL;
 
-    act_side_len = nearest_greater_two_power(side_len) + 1;
-
-    if ((m->height = alloc_height_arr(act_side_len)) == NULL)
-        return ENOMEM;
-
-    m->side_len = act_side_len;
+    m->side_len = pow_2(size);
     m->random_range = random_range;
     m->max = max_height;
+
+    if ((m->height = alloc_height_arr(m->side_len)) == NULL)
+        return ENOMEM;
 
     /* Set the waterlevel so no water is shown unless a user call
      * map_set_water_height. */
@@ -306,16 +302,6 @@ static void handle_partial_alloc(int **arr, int last_alloced)
     free(arr);
 }
 
-static size_t nearest_greater_two_power(size_t n)
-{
-    size_t a = 1;
-
-    while (a < n)
-        a *= 2;
-
-    return a;
-}
-
 static void map_top_right(map_t *m)
 {
     int i;
@@ -407,4 +393,9 @@ static inline void add_error_mid(map_t *m)
         random_pm_range(m->random_range);
 
     map_set_height(m, half_side, half_side, new_height);
+}
+
+static inline int pow_2(int n)
+{
+    return 1 << n;
 }

@@ -12,6 +12,7 @@ static void handle_arguments(int argc, char const *argv[]);
 static int is_number(char const *string);
 static void test_input(long length, long width, long random_range, long max);
 static void print_err_exit(char *fun, int num);
+static int find_two_greater(int n);
 
 static long length = 1000;
 static long width = 1000;
@@ -26,7 +27,7 @@ int main(int argc, char const *argv[])
     int ret_val;
 
     handle_arguments(argc, argv);
-    side_len = MAX(length, width);
+    side_len = find_two_greater(MAX(length, width));
 
     if ((ret_val = map_init(&map, side_len, random_range, max)) != 0)
         print_err_exit("map_init", ret_val);
@@ -160,7 +161,21 @@ static void test_input(long length, long width, long random_range, long max)
 
 static void print_err_exit(char *fun, int num)
 {
-    fprintf(stderr, "%s failed with: %d %s\n", fun, errno, strerror(errno));
+    fprintf(stderr, "%s failed with: %d and errno %d %s\n", fun, num, errno,
+            strerror(errno));
 
     exit(EXIT_SUCCESS);
+}
+
+static int find_two_greater(int n)
+{
+    int a = 1;
+    int b = 1;
+
+    while (a < n) {
+        a <<= 1;
+        b += 1;
+    }
+
+    return b;
 }
