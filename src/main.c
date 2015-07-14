@@ -85,6 +85,7 @@ static void handle_arguments(int argc, char const *argv[])
                         random_range = strtol(argv[next_arg+1], NULL, 10);
                         next_arg += 1;
                     }
+
                     break;
                 default:
                     fprintf(stderr, "Error, unknown switch %s\n",
