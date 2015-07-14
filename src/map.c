@@ -34,7 +34,7 @@ static void map_top_right(map_t *m);
 static void map_top_left(map_t *m);
 static void map_bottom_right(map_t *m);
 static void map_bottom_left(map_t *m);
-static void map_restore_top_rigth(map_t *m);
+static void map_restore_top_right(map_t *m);
 static void map_restore_top_left(map_t *m);
 static void map_restore_bottom_right(map_t *m);
 static void map_restore_bottom_left(map_t *m);
@@ -104,20 +104,9 @@ static void map_calculate_height(map_t *m)
     add_error_mid(m);
 
     map_top_right(m);
-    map_calculate_height(m);
-    map_restore_top_rigth(m);
-
     map_top_left(m);
-    map_calculate_height(m);
-    map_restore_top_left(m);
-
     map_bottom_right(m);
-    map_calculate_height(m);
-    map_restore_bottom_right(m);
-
     map_bottom_left(m);
-    map_calculate_height(m);
-    map_restore_bottom_left(m);
 }
 
 static void calculate_means(map_t *m)
@@ -337,9 +326,12 @@ static void map_top_right(map_t *m)
 
     for (i = 0; i < m->side_len; i++)
         m->height[i] += m->side_len;
+
+    map_calculate_height(m);
+    map_restore_top_right(m);
 }
 
-static void map_restore_top_rigth(map_t *m)
+static void map_restore_top_right(map_t *m)
 {
     int i;
 
@@ -360,6 +352,9 @@ static void map_top_left(map_t *m)
 
     for (i = 0; i < m->side_len; i ++)
         m->height[i] += m->side_len;
+
+    map_calculate_height(m);
+    map_restore_top_left(m);
 }
 
 static void map_restore_top_left(map_t *m)
@@ -378,6 +373,9 @@ static void map_bottom_right(map_t *m)
     m->random_range /= 2;
     m->side_len /= 2;
     m->height += m->side_len;
+
+    map_calculate_height(m);
+    map_restore_bottom_right(m);
 }
 
 static void map_restore_bottom_right(map_t *m)
@@ -391,6 +389,9 @@ static void map_bottom_left(map_t *m)
 {
     m->random_range /= 2;
     m->side_len /= 2;
+
+    map_calculate_height(m);
+    map_restore_bottom_left(m);
 }
 
 static void map_restore_bottom_left(map_t *m)
