@@ -43,14 +43,18 @@ static inline void add_error_mid(map_t *m);
 
 int map_init(map_t *m, size_t side_len, size_t random_range, size_t max_height)
 {
+    size_t act_side_len;
+
     /* Error handling. */
     if (random_range >= max_height || side_len <= 0 || random_range <= 0)
         return EINVAL;
 
-    if ((m->height = alloc_height_arr(side_len)) == NULL)
+    act_side_len = nearest_greater_two_power(side_len);
+
+    if ((m->height = alloc_height_arr(act_side_len)) == NULL)
         return ENOMEM;
 
-    m->side_len = side_len;
+    m->side_len = act_side_len;
     m->random_range = random_range;
     m->max = max_height;
 
