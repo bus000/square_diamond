@@ -41,7 +41,7 @@ static void calculate_means(map_t *m);
 static inline void add_error_mid(map_t *m);
 static inline int pow_2(int n);
 
-int map_init(map_t *m, size_t size, size_t random_range, size_t max_height)
+int map_init(map_t *m, size_t size, size_t random_range)
 {
     /* Error handling. */
     if (random_range >= max_height || size <= 0 || random_range <= 0)
@@ -49,7 +49,7 @@ int map_init(map_t *m, size_t size, size_t random_range, size_t max_height)
 
     m->side_len = pow_2(size) + 1;
     m->random_range = random_range;
-    m->max = max_height;
+    m->max = m->size - 1;
 
     if ((m->height = alloc_height_arr(m->side_len)) == NULL)
         return ENOMEM;

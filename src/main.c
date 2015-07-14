@@ -17,7 +17,6 @@ static int find_two_greater(int n);
 static long length = 1000;
 static long width = 1000;
 static long random_range = 1000;
-static long max = 2000;
 static char *filename = "out.png";
 
 int main(int argc, char const *argv[])
@@ -29,7 +28,7 @@ int main(int argc, char const *argv[])
     handle_arguments(argc, argv);
     side_len = find_two_greater(MAX(length, width));
 
-    if ((ret_val = map_init(&map, side_len, random_range, max)) != 0)
+    if ((ret_val = map_init(&map, side_len, random_range)) != 0)
         print_err_exit("map_init", ret_val);
 
     map_square_diamond(&map);
@@ -84,19 +83,6 @@ static void handle_arguments(int argc, char const *argv[])
                         exit(EXIT_SUCCESS);
                     } else {
                         random_range = strtol(argv[next_arg+1], NULL, 10);
-                        next_arg += 1;
-                    }
-
-                    break;
-                case 'm':
-                    if (next_arg == argc-1) {
-                        fprintf(stderr, "Expecting number after -m\n");
-                        exit(EXIT_SUCCESS);
-                    } else if (!is_number(argv[next_arg+1])) {
-                        fprintf(stderr, "Expecting number after -m\n");
-                        exit(EXIT_SUCCESS);
-                    } else {
-                        max = strtol(argv[next_arg+1], NULL, 10);
                         next_arg += 1;
                     }
 
