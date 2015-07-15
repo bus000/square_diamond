@@ -79,14 +79,13 @@ void map_set_water_height(map_t *m, int new_height)
     m->water_height = new_height;
 }
 
+/* Choose height of initial corners and call map_calculate_height on the map. */
 void map_square_diamond(map_t *m)
 {
-    /* Choose height of initial corners and call map_calculate_height on the
-     * map. */
-    m->height[0][0] = random_pm_range(m->random_range);
-    m->height[m->side_len-1][0] = random_pm_range(m->random_range);
-    m->height[m->side_len-1][m->side_len-1] = random_pm_range(m->random_range);
-    m->height[0][m->side_len-1] = random_pm_range(m->random_range);
+    LOWER_LEFT(m) = m->max / 2;
+    UPPER_LEFT(m) = m->max / 2;
+    LOWER_RIGHT(m) = m->max / 2;
+    UPPER_RIGHT(m) = m->max / 2;
 
     map_calculate_height(m);
 }

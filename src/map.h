@@ -12,6 +12,10 @@ typedef struct {
 } map_t;
 
 #define AVERAGE(x, y) ((x + y) / 2)
+#define LOWER_LEFT(m) (m->height[0][0])
+#define UPPER_LEFT(m) (m->height[0][m->side_len-1])
+#define LOWER_RIGHT(m) (m->height[m->side_len-1][0])
+#define UPPER_RIGHT(m) (m->height[m->side_len-1][m->side_len-1])
 
 /* Initializes the map, the higher the random range, the more hilly the terrain
  * will be. */
