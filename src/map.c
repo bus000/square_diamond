@@ -44,12 +44,12 @@ static inline int pow_2(int n);
 int map_init(map_t *m, size_t size, size_t random_range)
 {
     /* Error handling. */
-    if (random_range >= max_height || size <= 0 || random_range <= 0)
+    if (size <= 0 || random_range <= 0)
         return EINVAL;
 
     m->side_len = pow_2(size) + 1;
     m->random_range = random_range;
-    m->max = m->size - 1;
+    m->max = m->side_len - 1;
 
     if ((m->height = alloc_height_arr(m->side_len)) == NULL)
         return ENOMEM;
