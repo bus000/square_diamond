@@ -7,12 +7,11 @@ typedef struct {
     int **height;        /* Array of the heights of points in the plane. */
     size_t side_len;     /* Internal width and height of map. */
     size_t random_range; /* The range the height can change. */
-    int roughness;       /* Between 0 and max, determine terrain roughness. */
+    float roughness;       /* Between 0 and max, determine terrain roughness. */
     int water_height;    /* The height of any water on the map. */
     size_t max;          /* The maximum height on the map. */
 } map_t;
 
-#define AVERAGE(x, y) ((x + y) / 2)
 #define LOWER_LEFT(m) (m->height[0][0])
 #define UPPER_LEFT(m) (m->height[0][m->side_len-1])
 #define LOWER_RIGHT(m) (m->height[m->side_len-1][0])
