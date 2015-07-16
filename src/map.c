@@ -116,8 +116,12 @@ static void divide(map_t *m, int size)
 
 static void square(map_t *m, int x, int y, int size, int offset)
 {
-    printf("square (%d, %d)\n", x, y);
-    fflush(stdout);
+    int ave = average(4, map_get_height(m, x + size, y + size),
+            map_get_height(m, x + size, y - size),
+            map_get_height(m, x - size, y + size),
+            map_get_height(m, x - size, y - size));
+
+    map_set_height(m, x, y, ave + offset);
 }
 
 static void diamond(map_t *m, int x, int y, int size, int offset)
