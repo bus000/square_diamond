@@ -84,14 +84,10 @@ void map_square_diamond(map_t *m)
     LOWER_RIGHT(m) = m->max / 2;
     UPPER_RIGHT(m) = m->max / 2;
 
-    divide(m, m->side_len);
-    /*map_calculate_height(m);*/
+    divide(m, m->side_len, m->random_range);
 }
 
-static void square(map_t *m, int x, int y, int size, int offset);
-static void diamond(map_t *m, int x, int y, int size, int offset);
-
-static void divide(map_t *m, int size)
+static void divide(map_t *m, int size, int random_range)
 {
     int i, j;
     int half_size = size / 2;
@@ -111,7 +107,7 @@ static void divide(map_t *m, int size)
         for (i = (j + half_size) % size; i <= m->max; i += size)
             diamond(m, i, j, half_size, random_pm_range(scale * 2) - scale);
 
-    divide(m, half_size);
+    divide(m, half_size, random_range / 2);
 }
 
 static void square(map_t *m, int x, int y, int size, int offset)
