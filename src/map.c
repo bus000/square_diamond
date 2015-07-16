@@ -50,6 +50,7 @@ int map_init(map_t *m, size_t size, size_t random_range)
     m->side_len = pow_2(size) + 1;
     m->random_range = random_range;
     m->max = m->side_len - 1;
+    m->roughness = m->max / 2;
 
     if ((m->height = alloc_height_arr(m->side_len)) == NULL)
         return ENOMEM;
