@@ -40,7 +40,9 @@ static void map_restore_bottom_left(map_t *m);
 static void calculate_means(map_t *m);
 static inline void add_error_mid(map_t *m);
 static inline int pow_2(int n);
+static void divide(map_t *m, int size);
 
+/* TODO: Add roughness as a parameter. */
 int map_init(map_t *m, size_t size, size_t random_range)
 {
     /* Error handling. */
@@ -88,7 +90,52 @@ void map_square_diamond(map_t *m)
     LOWER_RIGHT(m) = m->max / 2;
     UPPER_RIGHT(m) = m->max / 2;
 
-    map_calculate_height(m);
+    divide(m, m->side_len);
+    /*map_calculate_height(m);*/
+}
+
+static void square(map_t *m, int x, int y, int size, int offset);
+static void diamond(map_t *m, int x, int y, int size, int offset);
+
+static void divide(map_t *m, int size)
+{
+    int i, j;
+    int half_size = size / 2;
+    int scale = m->roughness * size;
+
+    printf("divide size: %d\n", size);
+    fflush(stdout);
+
+    if (half_size < 1)
+        return;
+
+    for (i = half_size; i < m->max; i += size)
+        for (j = half_size; j < m->max; j += size)
+            square(m, i, j, half_size, random_pm_range(scale * 2) - scale);
+
+    for (j = 0; j <= m->max; j += half_size)
+        for (i = (j + half_size) % size; i <= m->max; i += size)
+            diamond(m, i, j, half_size, random_pm_range(scale * 2) - scale);
+
+    divide(m, half_size);
+}
+
+static void square(map_t *m, int x, int y, int size, int offset)
+{
+    printf("square (%d, %d)\n", x, y);
+    fflush(stdout);
+}
+
+static void diamond(map_t *m, int x, int y, int size, int offset)
+{
+    printf("diamond (%d, %d)\n", x, y);
+    fflush(stdout);
+    int ave = average(4, map_get_height(m, x, y - size),
+            map_get_height(m, x + size, y),
+            map_get_height(m, x, y + size),
+            map_get_height(m, x - size, y));
+
+    map_set_height(m, x, y, ave + offset);
 }
 
 static void map_calculate_height(map_t *m)
