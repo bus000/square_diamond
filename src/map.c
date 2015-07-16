@@ -91,21 +91,22 @@ static void divide(map_t *m, int size, int random_range)
 {
     int i, j;
     int half_size = size / 2;
-    int scale = m->roughness * size;
+    int scale = size * m->roughness;
+    /*int scale = m->roughness * size;*/
 
-    printf("divide size: %d\n", size);
-    fflush(stdout);
+    printf("scale %d, max %d, size %d, random_range %d\n", scale, (int) m->max,
+            size, random_range);
 
     if (half_size < 1)
         return;
 
     for (i = half_size; i < m->max; i += size)
         for (j = half_size; j < m->max; j += size)
-            square(m, i, j, half_size, random_pm_range(scale * 2) - scale);
+            square(m, i, j, half_size, random_pm_range(m->random_range));
 
     for (j = 0; j <= m->max; j += half_size)
         for (i = (j + half_size) % size; i <= m->max; i += size)
-            diamond(m, i, j, half_size, random_pm_range(scale * 2) - scale);
+            diamond(m, i, j, half_size, random_pm_range(m->random_range));
 
     divide(m, half_size, random_range / 2);
 }
@@ -122,8 +123,6 @@ static void square(map_t *m, int x, int y, int size, int offset)
 
 static void diamond(map_t *m, int x, int y, int size, int offset)
 {
-    printf("diamond (%d, %d)\n", x, y);
-    fflush(stdout);
     int ave = average(4, map_get_height(m, x, y - size),
             map_get_height(m, x + size, y),
             map_get_height(m, x, y + size),
