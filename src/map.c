@@ -21,7 +21,6 @@ typedef struct  {
 } bitmap_t;
 
 /* Help functions. */
-static void map_calculate_height(map_t *m);
 static int random_pm_range(int range);
 static int average(int n_args, ...);
 static int pix(int value, int max);
@@ -29,18 +28,10 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
 static int ** alloc_height_arr(size_t size);
 static void handle_partial_alloc(int **arr, int last_alloced);
-static void map_top_right(map_t *m);
-static void map_top_left(map_t *m);
-static void map_bottom_right(map_t *m);
-static void map_bottom_left(map_t *m);
-static void map_restore_top_right(map_t *m);
-static void map_restore_top_left(map_t *m);
-static void map_restore_bottom_right(map_t *m);
-static void map_restore_bottom_left(map_t *m);
-static void calculate_means(map_t *m);
-static inline void add_error_mid(map_t *m);
 static inline int pow_2(int n);
-static void divide(map_t *m, int size);
+static void divide(map_t *m, int size, int random_range);
+static void square(map_t *m, int x, int y, int size, int offset);
+static void diamond(map_t *m, int x, int y, int size, int offset);
 
 /* TODO: Add roughness as a parameter. */
 int map_init(map_t *m, size_t size, size_t random_range)
@@ -136,42 +127,6 @@ static void diamond(map_t *m, int x, int y, int size, int offset)
             map_get_height(m, x - size, y));
 
     map_set_height(m, x, y, ave + offset);
-}
-
-static void map_calculate_height(map_t *m)
-{
-    if (m->side_len <= 1 || m->random_range <= 1)
-        return;
-
-    calculate_means(m);
-    add_error_mid(m);
-
-    map_top_right(m);
-    map_top_left(m);
-    map_bottom_right(m);
-    map_bottom_left(m);
-}
-
-static void calculate_means(map_t *m)
-{
-    int x_mid, y_mid, lower_left, lower_right, upper_left, upper_right;
-    size_t side_len = m->side_len - 1;
-
-    x_mid = m->side_len / 2;
-    y_mid = m->side_len / 2;
-
-    lower_left = map_get_height(m, 0, 0);
-    lower_right = map_get_height(m, side_len, 0);
-    upper_left = map_get_height(m, 0, side_len);
-    upper_right = map_get_height(m, side_len, side_len);
-
-    /* Update midpoints as the average of surrounding points. */
-    map_set_height(m, x_mid, 0, AVERAGE(lower_left, lower_right));
-    map_set_height(m, 0, y_mid, AVERAGE(lower_left, upper_left));
-    map_set_height(m, x_mid, side_len, AVERAGE(upper_left, upper_right));
-    map_set_height(m, side_len, y_mid, AVERAGE(lower_right, upper_right));
-    map_set_height(m, x_mid, y_mid, average(4, lower_left, upper_left,
-                lower_right, upper_right));
 }
 
 int map_save_as_png(map_t const *m, char const *filename, size_t height,
@@ -349,100 +304,6 @@ static void handle_partial_alloc(int **arr, int last_alloced)
     free(arr);
 }
 
-static void map_top_right(map_t *m)
-{
-    int i;
-
-    m->random_range /= 2;
-    m->side_len /= 2;
-    m->height += m->side_len;
-
-    for (i = 0; i < m->side_len; i++)
-        m->height[i] += m->side_len;
-
-    map_calculate_height(m);
-    map_restore_top_right(m);
-}
-
-static void map_restore_top_right(map_t *m)
-{
-    int i;
-
-    for (i = 0; i < m->side_len; i++)
-        m->height[i] -= m->side_len;
-
-    m->height -= m->side_len;
-    m->random_range *= 2;
-    m->side_len *= 2;
-}
-
-static void map_top_left(map_t *m)
-{
-    int i;
-
-    m->random_range /= 2;
-    m->side_len /= 2;
-
-    for (i = 0; i < m->side_len; i ++)
-        m->height[i] += m->side_len;
-
-    map_calculate_height(m);
-    map_restore_top_left(m);
-}
-
-static void map_restore_top_left(map_t *m)
-{
-    int i;
-
-    for (i = 0; i < m->side_len; i++)
-        m->height[i] -= m->side_len;
-
-    m->random_range *= 2;
-    m->side_len *= 2;
-}
-
-static void map_bottom_right(map_t *m)
-{
-    m->random_range /= 2;
-    m->side_len /= 2;
-    m->height += m->side_len;
-
-    map_calculate_height(m);
-    map_restore_bottom_right(m);
-}
-
-static void map_restore_bottom_right(map_t *m)
-{
-    m->height -= m->side_len;
-    m->random_range *= 2;
-    m->side_len *= 2;
-}
-
-static void map_bottom_left(map_t *m)
-{
-    m->random_range /= 2;
-    m->side_len /= 2;
-
-    map_calculate_height(m);
-    map_restore_bottom_left(m);
-}
-
-static void map_restore_bottom_left(map_t *m)
-{
-    m->random_range *= 2;
-    m->side_len *= 2;
-}
-
-static inline void add_error_mid(map_t *m)
-{
-    int half_side = m->side_len / 2;
-    int new_height = map_get_height(m, half_side, half_side) +
-        random_pm_range(m->random_range);
-
-    map_set_height(m, half_side, half_side, new_height);
-}
-
-static inline int pow_2(int n)
-{
+static inline int pow_2(int n) {
     return 1 << n;
 }
