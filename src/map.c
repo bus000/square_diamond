@@ -60,6 +60,9 @@ int map_init(map_t *m, size_t size, size_t random_range)
 
 int map_get_height(map_t const *m, int x, int y)
 {
+    if (x >= m->max || x < 0 || y >= m->max || y < 0)
+        return 0;
+
     return m->height[x][y];
 }
 
