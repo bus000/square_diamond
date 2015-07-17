@@ -4,11 +4,11 @@
 #include <stdlib.h>
 
 typedef struct {
-    size_t side_len;     /* Internal width and height of map. */
-    size_t random_range; /* The range the height can change. */
-    int water_height;    /* The height of any water on the map. */
-    size_t max;          /* The maximum height on the map. */
     unsigned int **height; /* Array of the heights of points in the plane. */
+    size_t side_len;       /* Internal width and height of map. */
+    size_t random_range;   /* The range the height can change. */
+    int water_height;      /* The height of any water on the map. */
+    size_t max;            /* The maximum height on the map. */
     double roughness;      /* Between 0 and 1, change the slope. */
 } map_t;
 
