@@ -26,8 +26,8 @@ static int average(int n_args, ...);
 static int pix(int value, int max);
 static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
-static int ** alloc_height_arr(size_t size);
-static void handle_partial_alloc(int **arr, int last_alloced);
+static unsigned int ** alloc_height_arr(size_t size);
+static void handle_partial_alloc(unsigned int **arr, int last_alloced);
 static inline int pow_2(int n);
 static void divide(map_t *m, int size, int random_range);
 static void square(map_t *m, int x, int y, int size, int offset);
@@ -273,10 +273,10 @@ static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y)
     return bitmap->pixels + bitmap->width * y + x;
 }
 
-static int ** alloc_height_arr(size_t size)
+static unsigned int ** alloc_height_arr(size_t size)
 {
     int i;
-    int **arr = calloc(size, sizeof(int *));
+    unsigned int **arr = calloc(size, sizeof(int *));
 
     if (arr == NULL)
         return NULL;
@@ -292,7 +292,7 @@ static int ** alloc_height_arr(size_t size)
     return arr;
 }
 
-static void handle_partial_alloc(int **arr, int last_alloced)
+static void handle_partial_alloc(unsigned int **arr, int last_alloced)
 {
     int i;
 
