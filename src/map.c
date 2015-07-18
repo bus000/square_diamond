@@ -146,12 +146,12 @@ int map_save_as_png(map_t const *m, char const *filename, size_t height,
 
     for (y = 0; y < bitmap.height; y++) {
         for (x = 0; x < bitmap.width; x++) {
-            tmp_height = map_get_height(m, x, y) + m->random_range;
+            tmp_height = map_get_height(m, x, y);
 
             pixel = pixel_at(&bitmap, x, y);
-            pixel->red = pix(tmp_height, m->random_range * 2);
-            pixel->green = pix(tmp_height, m->random_range * 2);
-            pixel->blue = pix(tmp_height, m->random_range * 2);
+            pixel->red = pix(tmp_height, m->max);
+            pixel->green = pix(tmp_height, m->max);
+            pixel->blue = pix(tmp_height, m->max);
         }
     }
 
