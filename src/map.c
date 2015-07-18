@@ -71,9 +71,9 @@ void map_set_height(map_t *m, int x, int y, int value)
     m->height[x][y] = value;
 }
 
-void map_set_water_height(map_t *m, int new_height)
+void map_set_water_height(map_t *m, int height)
 {
-    m->water_height = new_height;
+    m->water_height = height;
 }
 
 /* Choose height of initial corners and call map_calculate_height on the map. */
