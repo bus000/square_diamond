@@ -21,7 +21,7 @@ typedef struct  {
 } bitmap_t;
 
 /* Help functions. */
-static int random_pm_range(int range);
+static int new_height(map_t *m, int size, int offset);
 static int average(int n_args, ...);
 static int pix(int value, int max);
 static int save_png_to_file(bitmap_t *bitmap, char const *path);
@@ -173,9 +173,24 @@ inline int map_shallow_cmp(map_t const *m1, map_t const *m2)
         m1->max == m2->max;
 }
 
-static int random_pm_range(int range)
+static int new_height(map_t *m, int size, int prevval)
 {
-    return (range == 0) ? 0 : (rand() % (2 * range)) - range;
+    int max_change, new_val;
+
+    /* Calculate the maximum amount the map value can change. */
+    max_change = (int) ((double) size * m->roughness);
+
+    if (max_change == 0)
+        new_val = 0;
+    else
+        new_val = prevval - ((rand() % (max_change * 2)) - max_change);
+
+    if (new_val < 0)
+        return 0;
+    else if (new_val > m->max)
+        return m->max;
+    else
+        return new_val;
 }
 
 static int average(int n_args, ...)
