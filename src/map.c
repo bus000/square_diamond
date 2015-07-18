@@ -29,9 +29,9 @@ static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
 static unsigned int ** alloc_height_arr(size_t size);
 static void handle_partial_alloc(unsigned int **arr, int last_alloced);
 static inline int pow_2(int n);
-static void divide(map_t *m, int size, int random_range);
-static void square(map_t *m, int x, int y, int size, int offset);
-static void diamond(map_t *m, int x, int y, int size, int offset);
+static void divide(map_t *m, int size);
+static void square(map_t *m, int x, int y, int size);
+static void diamond(map_t *m, int x, int y, int size);
 
 /* TODO: Add roughness as a parameter. */
 int map_init(map_t *m, size_t size, size_t random_range)
@@ -84,51 +84,46 @@ void map_square_diamond(map_t *m)
     LOWER_RIGHT(m) = m->max / 2;
     UPPER_RIGHT(m) = m->max / 2;
 
-    divide(m, m->side_len, m->random_range);
+    divide(m, m->side_len);
 }
 
-static void divide(map_t *m, int size, int random_range)
+static void divide(map_t *m, int size)
 {
     int i, j;
     int half_size = size / 2;
-    int scale = size * m->roughness;
-    /*int scale = m->roughness * size;*/
-
-    printf("scale %d, max %d, size %d, random_range %d\n", scale, (int) m->max,
-            size, random_range);
 
     if (half_size < 1)
         return;
 
     for (i = half_size; i < m->max; i += size)
         for (j = half_size; j < m->max; j += size)
-            square(m, i, j, half_size, random_pm_range(m->random_range));
+            square(m, i, j, half_size);
 
     for (j = 0; j <= m->max; j += half_size)
         for (i = (j + half_size) % size; i <= m->max; i += size)
-            diamond(m, i, j, half_size, random_pm_range(m->random_range));
+            diamond(m, i, j, half_size);
 
-    divide(m, half_size, random_range / 2);
+    divide(m, half_size);
 }
 
-static void square(map_t *m, int x, int y, int size, int offset)
+static void square(map_t *m, int x, int y, int size)
 {
     int ave = average(4, map_get_height(m, x + size, y + size),
             map_get_height(m, x + size, y - size),
             map_get_height(m, x - size, y + size),
             map_get_height(m, x - size, y - size));
 
-    map_set_height(m, x, y, ave + offset);
+    map_set_height(m, x, y, new_height(m, size, ave));
 }
 
-static void diamond(map_t *m, int x, int y, int size, int offset)
+static void diamond(map_t *m, int x, int y, int size)
 {
     int ave = average(4, map_get_height(m, x, y - size),
             map_get_height(m, x + size, y),
             map_get_height(m, x, y + size),
             map_get_height(m, x - size, y));
 
-    map_set_height(m, x, y, ave + offset);
+    map_set_height(m, x, y, new_height(m, size, ave));
 }
 
 int map_save_as_png(map_t const *m, char const *filename, size_t height,
