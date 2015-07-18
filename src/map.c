@@ -273,10 +273,7 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path)
 
 static int pix(int value, int max)
 {
-    if (value < 0)
-        return 0;
-
-    return (int) (256.0 *((double) (value)/(double) max));
+    return (value < 0) ? 0 : (int) (256.0 *((double) (value)/(double) max));
 }
 
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y)
