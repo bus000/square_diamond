@@ -86,6 +86,7 @@ static void handle_arguments(int argc, char const *argv[])
                             exit(EXIT_SUCCESS);
                         }
                     }
+                    next_arg += 1;
 
                     break;
                 default:
