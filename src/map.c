@@ -33,27 +33,25 @@ static void divide(map_t *m, int size);
 static void square(map_t *m, int x, int y, int size);
 static void diamond(map_t *m, int x, int y, int size);
 
-/* TODO: Add roughness as a parameter. */
-int map_init(map_t *m, size_t size, size_t random_range)
+int map_init(map_t *m, size_t size, double roughness)
 {
     /* Error handling. */
-    if (size <= 0 || random_range <= 0)
+    if (size <= 0 || roughness > 1.0 || roughness < 0.0)
         return EINVAL;
 
+    /* Set the random number generator. */
+    srand(time(NULL));
+
     m->side_len = pow_2(size) + 1;
-    m->random_range = random_range;
     m->max = m->side_len - 1;
-    m->roughness = 0.5f;
+    m->roughness = roughness;
 
     if ((m->height = alloc_height_arr(m->side_len)) == NULL)
         return ENOMEM;
 
     /* Set the waterlevel so no water is shown unless a user call
      * map_set_water_height. */
-    m->water_height = -random_range - 1;
-
-    /* Set the random number generator. */
-    srand(time(NULL));
+    m->water_height = -1;
 
     return 0;
 }
@@ -160,10 +158,11 @@ int map_save_as_png(map_t const *m, char const *filename, size_t height,
     return 0;
 }
 
+/* TODO: Implement a comparing function for double values. */
 inline int map_shallow_cmp(map_t const *m1, map_t const *m2)
 {
     return m1->side_len == m2->side_len ||
-        m1->random_range == m2->random_range ||
+        m1->roughness == m2->roughness ||
         m1->water_height == m2->water_height ||
         m1->max == m2->max;
 }

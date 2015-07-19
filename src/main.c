@@ -10,13 +10,13 @@
 /* Help functions. */
 static void handle_arguments(int argc, char const *argv[]);
 static int is_number(char const *string);
-static void test_input(long length, long width, long random_range);
+static void test_input(long length, long width, double roughness);
 static void print_err_exit(char *fun, int num);
 static int find_two_greater(int n);
 
 static long length = 1000;
 static long width = 1000;
-static long random_range = 1000;
+static double roughness = 0.5;
 static char *filename = "out.png";
 
 int main(int argc, char const *argv[])
@@ -28,7 +28,7 @@ int main(int argc, char const *argv[])
     handle_arguments(argc, argv);
     side_len = find_two_greater(MAX(length, width));
 
-    if ((ret_val = map_init(&map, side_len, random_range)) != 0)
+    if ((ret_val = map_init(&map, side_len, roughness)) != 0)
         print_err_exit("map_init", ret_val);
 
     map_square_diamond(&map);
@@ -76,14 +76,15 @@ static void handle_arguments(int argc, char const *argv[])
                     break;
                 case 'r':
                     if (next_arg == argc-1) {
-                        fprintf(stderr, "Expecting number after -r\n");
+                        fprintf(stderr, "Expecting floating point number "
+                                "after -r\n");
                         exit(EXIT_SUCCESS);
-                    } else if (!is_number(argv[next_arg+1])) {
-                        fprintf(stderr, "Expecting number after -r\n");
-                        exit(EXIT_SUCCESS);
-                    } else {
-                        random_range = strtol(argv[next_arg+1], NULL, 10);
-                        next_arg += 1;
+                    } else if ((roughness = strtod(argv[next_arg+1], NULL)) == 0.0) {
+                        if (errno != 0) {
+                            fprintf(stderr, "Expecting floating point number "
+                                "after -r\n");
+                            exit(EXIT_SUCCESS);
+                        }
                     }
 
                     break;
@@ -102,7 +103,7 @@ static void handle_arguments(int argc, char const *argv[])
         }
     }
 
-    test_input(length, width, random_range);
+    test_input(length, width, roughness);
 }
 
 static int is_number(char const *string)
@@ -125,7 +126,7 @@ static int is_number(char const *string)
     return 1;
 }
 
-static void test_input(long length, long width, long random_range)
+static void test_input(long length, long width, double roughness)
 {
     if (length <= 0) {
         fprintf(stderr, "Length should be greater than 0\n");
@@ -133,9 +134,8 @@ static void test_input(long length, long width, long random_range)
     } else if (width <= 0) {
         fprintf(stderr, "Width should be greater than 0\n");
         exit(EXIT_SUCCESS);
-    } else if (random_range <= 0) {
-        fprintf(stderr, "Random range should be greater than 0\n");
-        exit(EXIT_SUCCESS);
+    } else if (roughness < 0.0 || roughness > 1.0) {
+        fprintf(stderr, "Roughness should be between 0.0 and 1.0.\n");
     }
 }
 

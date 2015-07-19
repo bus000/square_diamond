@@ -6,7 +6,6 @@
 typedef struct {
     unsigned int **height; /* Array of the heights of points in the plane. */
     size_t side_len;       /* Internal width and height of map. */
-    size_t random_range;   /* The range the height can change. */
     int water_height;      /* The height of any water on the map. */
     size_t max;            /* The maximum height on the map. */
     double roughness;      /* Between 0 and 1, change the slope. */
@@ -19,7 +18,7 @@ typedef struct {
 
 /* Initializes the map, the higher the random range, the more hilly the terrain
  * will be. */
-int map_init(map_t *m, size_t size, size_t random_range);
+int map_init(map_t *m, size_t size, double roughness);
 
 /* Returns the height of the map in a specific point. */
 int map_get_height(map_t const *m, int x, int y);
