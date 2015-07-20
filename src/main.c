@@ -10,20 +10,27 @@
 /* Help functions. */
 static void handle_arguments(int argc, char const *argv[]);
 static int is_number(char const *string);
-static void test_input(long length, long width, double roughness);
+static void test_input(char const *program_name, long length, long width,
+        double roughness, char const *file);
 static void print_err_exit(char *fun, int num);
 static int find_two_greater(int n);
+static void usage(char const *program_name);
 
-static long length = 1000;
-static long width = 1000;
-static double roughness = 0.5;
-static char *filename = "out.png";
+static long length, default_length;
+static long width, default_width;
+static double roughness, default_roughness;
+static char *filename, *default_filename;
 
 int main(int argc, char const *argv[])
 {
     map_t map;
     int side_len;
     int ret_val;
+
+    default_length = length = 1000;
+    default_width = width = 1000;
+    default_roughness = roughness = 0.5;
+    default_filename = filename = NULL;
 
     handle_arguments(argc, argv);
     side_len = find_two_greater(MAX(length, width));
@@ -50,11 +57,9 @@ static void handle_arguments(int argc, char const *argv[])
             switch (*(argv[next_arg]+1)) {
                 case 'l':
                     if (next_arg == argc-1) {
-                        fprintf(stderr, "Expecting number after -l\n");
-                        exit(EXIT_SUCCESS);
+                        usage(argv[0]);
                     } else if (!is_number(argv[next_arg+1])) {
-                        fprintf(stderr, "Expecting number after -l\n");
-                        exit(EXIT_SUCCESS);
+                        usage(argv[0]);
                     } else {
                         length = strtol(argv[next_arg+1], NULL, 10);
                         next_arg += 1;
@@ -63,11 +68,9 @@ static void handle_arguments(int argc, char const *argv[])
                     break;
                 case 'w':
                     if (next_arg == argc-1) {
-                        fprintf(stderr, "Expecting number after -w\n");
-                        exit(EXIT_SUCCESS);
+                        usage(argv[0]);
                     } else if (!is_number(argv[next_arg+1])) {
-                        fprintf(stderr, "Expecting number after -w\n");
-                        exit(EXIT_SUCCESS);
+                        usage(argv[0]);
                     } else {
                         width = strtol(argv[next_arg+1], NULL, 10);
                         next_arg += 1;
@@ -76,35 +79,27 @@ static void handle_arguments(int argc, char const *argv[])
                     break;
                 case 'r':
                     if (next_arg == argc-1) {
-                        fprintf(stderr, "Expecting floating point number "
-                                "after -r\n");
-                        exit(EXIT_SUCCESS);
+                        usage(argv[0]);
                     } else if ((roughness = strtod(argv[next_arg+1], NULL)) == 0.0) {
-                        if (errno != 0) {
-                            fprintf(stderr, "Expecting floating point number "
-                                "after -r\n");
-                            exit(EXIT_SUCCESS);
-                        }
+                        if (errno != 0)
+                            usage(argv[0]);
                     }
                     next_arg += 1;
 
                     break;
                 default:
-                    fprintf(stderr, "Error, unknown switch %s\n",
-                            argv[next_arg]);
-                    exit(EXIT_SUCCESS);
+                    usage(argv[0]);
             }
         } else {
             if (next_arg+1 < argc) { /* Not last argument. */
-                fprintf(stderr, "Error, unknown argument %s\n", argv[next_arg]);
-                exit(EXIT_SUCCESS);
+                usage(argv[0]);
             } else { /* Last argument is filename. */
                 filename = strdup(argv[next_arg]);
             }
         }
     }
 
-    test_input(length, width, roughness);
+    test_input(argv[0], length, width, roughness, filename);
 }
 
 static int is_number(char const *string)
@@ -127,16 +122,17 @@ static int is_number(char const *string)
     return 1;
 }
 
-static void test_input(long length, long width, double roughness)
+static void test_input(char const *program_name, long length, long width,
+        double roughness, char const *file)
 {
     if (length <= 0) {
-        fprintf(stderr, "Length should be greater than 0\n");
-        exit(EXIT_SUCCESS);
+        usage(program_name);
     } else if (width <= 0) {
-        fprintf(stderr, "Width should be greater than 0\n");
-        exit(EXIT_SUCCESS);
+        usage(program_name);
     } else if (roughness < 0.0 || roughness > 1.0) {
-        fprintf(stderr, "Roughness should be between 0.0 and 1.0.\n");
+        usage(program_name);
+    } else if (file == NULL) {
+        usage(program_name);
     }
 }
 
@@ -159,4 +155,24 @@ static int find_two_greater(int n)
     }
 
     return b;
+}
+
+static void usage(char const *program_name)
+{
+    fprintf(stderr, "usage: %s [-w width] [-l length] [-r roughness] "
+            "outfilename\n"
+
+            "  -w: width of the output map in pixels, greater than 0, default "
+            "%ld\n"
+
+            "  -l: length of the output map in pixels, greater than 0, default "
+            "%ld\n"
+
+            "  -r: roughness of the map between 0.0 and 1.0, default %f\n"
+
+            "outfilename: name of output file\n",
+
+            program_name, default_width, default_length, default_roughness);
+
+    exit(EXIT_FAILURE);
 }
