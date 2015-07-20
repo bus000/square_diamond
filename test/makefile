@@ -11,8 +11,6 @@ LFLAGS    =-L../src/ -I/usr/local/include/libpng14 -L/usr/local/lib -lpng -lz
 all: $(TARGETS)
 
 $(TARGETS): $(OBJECTS)
-	echo $<
-	echo $@
 	$(CC) $(CFLAGS) $< $(EXOBJECTS) -o $@ $(LFLAGS)
 	./$@ < $@_input.txt > $@_output.txt
 	diff $@_correct_output.txt $@_output.txt
