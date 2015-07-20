@@ -4,7 +4,7 @@ SOURCES   =$(wildcard *.c)$
 OBJECTS   =$(SOURCES:.c=.o)$
 EXOBJECTS =$(shell find '../src/' -name '*.o' | grep -v main.o)$
 TARGETS   =$(SOURCES:.c=)$
-LFLAGS    =-L../src/
+LFLAGS    =-L../src/ -I/usr/local/include/libpng14 -L/usr/local/lib -lpng -lz
 
 .PHONY: clean $(TARGETS)
 
