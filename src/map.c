@@ -22,7 +22,7 @@ typedef struct  {
 
 /* Help functions. */
 static int new_height(map_t *m, int size, int offset);
-static int average(int n_args, ...);
+static int map_average(int n_args, ...);
 static int pix(int value, int max);
 static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
@@ -106,7 +106,7 @@ static void divide(map_t *m, int size)
 
 static void square(map_t *m, int x, int y, int size)
 {
-    int ave = average(4, map_get_height(m, x + size, y + size),
+    int ave = map_average(4, map_get_height(m, x + size, y + size),
             map_get_height(m, x + size, y - size),
             map_get_height(m, x - size, y + size),
             map_get_height(m, x - size, y - size));
@@ -116,7 +116,7 @@ static void square(map_t *m, int x, int y, int size)
 
 static void diamond(map_t *m, int x, int y, int size)
 {
-    int ave = average(4, map_get_height(m, x, y - size),
+    int ave = map_average(4, map_get_height(m, x, y - size),
             map_get_height(m, x + size, y),
             map_get_height(m, x, y + size),
             map_get_height(m, x - size, y));
@@ -187,20 +187,28 @@ static int new_height(map_t *m, int size, int prevval)
         return new_val;
 }
 
-static int average(int n_args, ...)
+static int map_average(int n_args, ...)
 {
     int i;
     int sum = 0;
+    int cur;
+    int num_valid = 0;
     va_list ap;
 
     va_start(ap, n_args);
 
-    for (i = 0; i < n_args; i++)
-        sum += va_arg(ap, int);
+    for (i = 0; i < n_args; i++) {
+        cur = va_arg(ap, int);
+
+        if (cur >= 0) {
+            num_valid += 1;
+            sum += cur;
+        }
+    }
 
     va_end(ap);
 
-    return sum / n_args;
+    return sum / num_valid;
 }
 
 /* http://www.lemoda.net/c/write-png/ */
