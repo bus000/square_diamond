@@ -12,8 +12,8 @@ all: $(TARGETS)
 
 $(TARGETS): $(OBJECTS)
 	$(CC) $(CFLAGS) $< $(EXOBJECTS) -o $@ $(LFLAGS)
-	./$@ < $@_input.txt > $@_output.txt
-	diff $@_correct_output.txt $@_output.txt
+	./$@ > $@_output.txt
+	diff $@_correct.txt $@_output.txt | colordiff
 
 %.o: %.c
 	$(CC) -o $@ $(CFLAGS) -c $<
