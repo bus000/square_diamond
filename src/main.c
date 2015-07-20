@@ -141,7 +141,7 @@ static void print_err_exit(char *fun, int num)
     fprintf(stderr, "%s failed with: %d and errno %d %s\n", fun, num, errno,
             strerror(errno));
 
-    exit(EXIT_SUCCESS);
+    exit(EXIT_FAILURE);
 }
 
 static int find_two_greater(int n)
