@@ -58,7 +58,7 @@ int map_init(map_t *m, size_t size, double roughness)
 
 int map_get_height(map_t const *m, int x, int y)
 {
-    if (x >= m->max || x < 0 || y >= m->max || y < 0)
+    if (x >= m->side_len || x < 0 || y >= m->side_len || y < 0)
         return -1;
 
     return m->height[x][y];
