@@ -32,6 +32,7 @@ static inline int pow_2(int n);
 static void divide(map_t *m, int size);
 static void square(map_t *m, int x, int y, int size);
 static void diamond(map_t *m, int x, int y, int size);
+static cmp_double(double a, double b, double eps);
 
 int map_init(map_t *m, size_t size, double roughness)
 {
@@ -158,13 +159,13 @@ int map_save_as_png(map_t const *m, char const *filename, size_t height,
     return 0;
 }
 
-/* TODO: Implement a comparing function for double values. */
 inline int map_shallow_cmp(map_t const *m1, map_t const *m2)
 {
-    return m1->side_len == m2->side_len ||
-        m1->roughness == m2->roughness ||
-        m1->water_height == m2->water_height ||
-        m1->max == m2->max;
+    return m1->side_len == m2->side_len &&
+        m1->roughness == m2->roughness &&
+        m1->water_height == m2->water_height &&
+        m1->max == m2->max &&
+        cmp_double(m1->roughness, m2->roughness, 0.001);
 }
 
 static int new_height(map_t *m, int size, int prevval)
@@ -323,4 +324,9 @@ static void handle_partial_alloc(unsigned int **arr, int last_alloced)
 
 static inline int pow_2(int n) {
     return 1 << n;
+}
+
+static cmp_double(double a, double b, double eps)
+{
+    return (a > b) ? (a - b) < eps : (b - a) < eps;
 }
