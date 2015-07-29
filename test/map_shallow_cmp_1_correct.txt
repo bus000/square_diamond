@@ -1,0 +1,6 @@
+m1 and m2 equal
+m1 and m3 not equal
+m2 and m3 not equal
+m2 and m3 not equal
+m1 and m3 not equal
+m1 and m3 equal
