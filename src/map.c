@@ -322,7 +322,8 @@ static void handle_partial_alloc(unsigned int **arr, int last_alloced)
     free(arr);
 }
 
-static inline int pow_2(int n) {
+static inline int pow_2(int n)
+{
     return 1 << n;
 }
 
