@@ -32,7 +32,7 @@ static inline int pow_2(int n);
 static void divide(map_t *m, int size);
 static void square(map_t *m, int x, int y, int size);
 static void diamond(map_t *m, int x, int y, int size);
-static cmp_double(double a, double b, double eps);
+static int cmp_double(double a, double b, double eps);
 
 int map_init(map_t *m, size_t size, double roughness)
 {
@@ -327,7 +327,7 @@ static inline int pow_2(int n)
     return 1 << n;
 }
 
-static cmp_double(double a, double b, double eps)
+static int cmp_double(double a, double b, double eps)
 {
     return (a > b) ? (a - b) < eps : (b - a) < eps;
 }
