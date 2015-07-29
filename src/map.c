@@ -315,9 +315,8 @@ static void handle_partial_alloc(unsigned int **arr, int last_alloced)
     if (last_alloced < 0)
         return;
 
-    for (i = 0; i < last_alloced; i++) {
+    for (i = 0; i < last_alloced; i++)
         free(arr[i]);
-    }
 
     free(arr);
 }
