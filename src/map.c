@@ -6,6 +6,7 @@
 #include <stdio.h> /* FILE, fopen, fclose. */
 #include <png.h> /* png_create_write_struct, png_set_IHDR, png_malloc */
 #include <errno.h> /* ENOMEM, EINVAL. */
+#include <string.h> /* memset. */
 
 /* Help structs. */
 typedef struct {
@@ -84,6 +85,45 @@ void map_square_diamond(map_t *m)
     UPPER_RIGHT(m) = m->max / 2;
 
     divide(m, m->side_len);
+
+static char * horizontal_line(size_t size, int digits_per_num);
+
+void map_print(map_t *m, FILE *f)
+{
+    int i, j;
+    int digits_per_num = 1;
+    char *line;
+    int max = m->side_len;
+
+    if (m->side_len == 0)
+        return;
+
+    while ((max /= 10) > 0)
+        digits_per_num += 1;
+
+    line = horizontal_line(m->side_len, digits_per_num);
+
+    fprintf(f, "%s\n", line);
+    for (i = 0; i < m->side_len; i++) {
+        fputc('|', f);
+        for (j = 0; j < m->side_len; j++) {
+            fprintf(f, " %.*d |", digits_per_num, map_get_height(m, i, j));
+        }
+        fprintf(f, "\n%s\n", line);
+    }
+
+    free(line);
+}
+
+static char * horizontal_line(size_t size, int digits_per_num)
+{
+    int line_len = size * (digits_per_num + 3) + 2;
+    char *line = malloc(sizeof(char) * line_len);
+
+    memset(line, '-', line_len);
+    line[line_len] = '\0';
+
+    return line;
 }
 
 static void divide(map_t *m, int size)
