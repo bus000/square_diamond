@@ -84,7 +84,8 @@ void map_square_diamond(map_t *m)
     LOWER_RIGHT(m) = m->max / 2;
     UPPER_RIGHT(m) = m->max / 2;
 
-    divide(m, m->side_len);
+    divide(m, m->max);
+}
 
 static char * horizontal_line(size_t size, int digits_per_num);
 
