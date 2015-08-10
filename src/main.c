@@ -15,6 +15,7 @@ static void test_input(char const *program_name, long length, long width,
 static void print_err_exit(char *fun, int num);
 static int find_two_greater(int n);
 static void usage(char const *program_name);
+static void usage_with_return(char const *program_name, int return_no);
 
 static long length, default_length;
 static long width, default_width;
@@ -159,6 +160,11 @@ static int find_two_greater(int n)
 
 static void usage(char const *program_name)
 {
+    usage_with_return(program_name, EXIT_FAILURE);
+}
+
+static void usage_with_return(char const *program_name, int return_no)
+{
     fprintf(stderr, "usage: %s [-w width] [-l length] [-r roughness] "
             "outfilename\n"
 
@@ -174,5 +180,5 @@ static void usage(char const *program_name)
 
             program_name, default_width, default_length, default_roughness);
 
-    exit(EXIT_FAILURE);
+    exit(return_no);
 }
