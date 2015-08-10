@@ -88,8 +88,12 @@ static void handle_arguments(int argc, char const *argv[])
                     next_arg += 1;
 
                     break;
+                case 'h':
+                    usage_with_return(argv[0], EXIT_SUCCESS);
+                    break;
                 default:
                     usage(argv[0]);
+                    break;
             }
         } else {
             if (next_arg+1 < argc) { /* Not last argument. */
