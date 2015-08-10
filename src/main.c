@@ -6,6 +6,10 @@
 #include "map.h"
 
 #define MAX(x, y) ((x) < (y) ? (y) : (x))
+#define LENGTH    1000L
+#define WIDTH     1000L
+#define ROUGHNESS 0.5
+#define FILENAME  NULL
 
 /* Help functions. */
 static void handle_arguments(int argc, char const *argv[]);
@@ -17,21 +21,16 @@ static int find_two_greater(int n);
 static void usage(char const *program_name);
 static void usage_with_return(char const *program_name, int return_no);
 
-static long length, default_length;
-static long width, default_width;
-static double roughness, default_roughness;
-static char *filename, *default_filename;
+static long length = LENGTH;
+static long width = WIDTH;
+static double roughness = ROUGHNESS;
+static char *filename = FILENAME;
 
 int main(int argc, char const *argv[])
 {
     map_t map;
     int side_len;
     int ret_val;
-
-    default_length = length = 1000;
-    default_width = width = 1000;
-    default_roughness = roughness = 0.5;
-    default_filename = filename = NULL;
 
     handle_arguments(argc, argv);
     side_len = find_two_greater(MAX(length, width));
@@ -181,7 +180,7 @@ static void usage_with_return(char const *program_name, int return_no)
 
             "outfilename: name of output file\n",
 
-            program_name, default_width, default_length, default_roughness);
+            program_name, WIDTH, LENGTH, ROUGHNESS);
 
     exit(return_no);
 }
