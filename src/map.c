@@ -217,9 +217,9 @@ static int new_height(map_t *m, int size, int prevval)
     max_change = (int) ((double) size * m->roughness);
 
     if (max_change == 0)
-        new_val = 0;
+        new_val = prevval;
     else
-        new_val = prevval - ((rand() % (max_change * 2)) - max_change);
+        new_val = prevval + ((rand() % (max_change * 2)) - max_change);
 
     if (new_val < 0)
         return 0;
