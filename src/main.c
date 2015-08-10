@@ -130,15 +130,14 @@ static int is_number(char const *string)
 static void test_input(char const *program_name, long length, long width,
         double roughness, char const *file)
 {
-    if (length <= 0) {
+    if (length <= 0)
         usage(program_name);
-    } else if (width <= 0) {
+    else if (width <= 0)
         usage(program_name);
-    } else if (roughness < 0.0 || roughness > 1.0) {
+    else if (roughness < 0.0 || roughness > 1.0)
         usage(program_name);
-    } else if (file == NULL) {
+    else if (file == NULL)
         usage(program_name);
-    }
 }
 
 static void print_err_exit(char *fun, int num)
