@@ -310,12 +310,12 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path)
         }
     png_free (png_ptr, row_pointers);
 
- png_failure:
- png_create_info_struct_failed:
+png_failure:
+png_create_info_struct_failed:
     png_destroy_write_struct(&png_ptr, &info_ptr);
- png_create_write_struct_failed:
+png_create_write_struct_failed:
     fclose(fp);
- fopen_failed:
+fopen_failed:
     return status;
 }
 
