@@ -283,17 +283,17 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path)
     if (setjmp (png_jmpbuf (png_ptr)))
         goto png_failure;
 
-    png_set_IHDR (png_ptr, info_ptr, bitmap->width, bitmap->height, depth,
+    png_set_IHDR(png_ptr, info_ptr, bitmap->width, bitmap->height, depth,
             PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
             PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
-    row_pointers = png_malloc (png_ptr, bitmap->height * sizeof (png_byte *));
+    row_pointers = png_malloc(png_ptr, bitmap->height * sizeof (png_byte *));
     for (y = 0; y < bitmap->height; ++y) {
         png_byte *row =
             png_malloc (png_ptr, sizeof (uint8_t) * bitmap->width * pixel_size);
         row_pointers[y] = row;
         for (x = 0; x < bitmap->width; ++x) {
-            pixel_t * pixel = pixel_at (bitmap, x, y);
+            pixel_t *pixel = pixel_at(bitmap, x, y);
             *row++ = pixel->red;
             *row++ = pixel->green;
             *row++ = pixel->blue;
