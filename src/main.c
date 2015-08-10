@@ -14,8 +14,7 @@
 /* Help functions. */
 static void handle_arguments(int argc, char const *argv[]);
 static int is_number(char const *string);
-static void test_input(char const *program_name, long length, long width,
-        double roughness, char const *file);
+static void test_input(char const *program_name);
 static void print_err_exit(char *fun, int num);
 static int find_two_greater(int n);
 static void usage(char const *program_name);
@@ -103,7 +102,7 @@ static void handle_arguments(int argc, char const *argv[])
         }
     }
 
-    test_input(argv[0], length, width, roughness, filename);
+    test_input(argv[0]);
 }
 
 static int is_number(char const *string)
@@ -126,8 +125,7 @@ static int is_number(char const *string)
     return 1;
 }
 
-static void test_input(char const *program_name, long length, long width,
-        double roughness, char const *file)
+static void test_input(char const *program_name)
 {
     if (length <= 0)
         usage(program_name);
@@ -135,7 +133,7 @@ static void test_input(char const *program_name, long length, long width,
         usage(program_name);
     else if (roughness < 0.0 || roughness > 1.0)
         usage(program_name);
-    else if (file == NULL)
+    else if (filename == NULL)
         usage(program_name);
 }
 
