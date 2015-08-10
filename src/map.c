@@ -1,4 +1,5 @@
 #include "map.h"
+#include "util.h"
 #include <stdlib.h> /* malloc, calloc, free. */
 #include <time.h> /* time. */
 #include <stdarg.h> /* va_start, va_arg, va_end. */
@@ -29,11 +30,9 @@ static int save_png_to_file(bitmap_t *bitmap, char const *path);
 static pixel_t * pixel_at(bitmap_t *bitmap, int x, int y);
 static unsigned int ** alloc_height_arr(size_t size);
 static void handle_partial_alloc(unsigned int **arr, int last_alloced);
-static inline int pow_2(int n);
 static void divide(map_t *m, int size);
 static void square(map_t *m, int x, int y, int size);
 static void diamond(map_t *m, int x, int y, int size);
-static int cmp_double(double a, double b, double eps);
 
 int map_init(map_t *m, size_t size, double roughness)
 {
@@ -360,14 +359,4 @@ static void handle_partial_alloc(unsigned int **arr, int last_alloced)
         free(arr[i]);
 
     free(arr);
-}
-
-static inline int pow_2(int n)
-{
-    return 1 << n;
-}
-
-static int cmp_double(double a, double b, double eps)
-{
-    return (a > b) ? (a - b) < eps : (b - a) < eps;
 }

@@ -1,9 +1,9 @@
+#include "map.h"
+#include "util.h"
 #include <stdio.h> /* fprintf, stderr. */
 #include <stdlib.h> /* exit, strtol. */
-#include <ctype.h> /* isspace. */
 #include <string.h> /* strdup. */
 #include <errno.h> /* EINVAL, ENOMEM, strerror. */
-#include "map.h"
 
 #define MAX(x, y) ((x) < (y) ? (y) : (x))
 #define LENGTH    1000L
@@ -13,10 +13,8 @@
 
 /* Help functions. */
 static void handle_arguments(int argc, char const *argv[]);
-static int is_number(char const *string);
 static void test_input(char const *program_name);
 static void print_err_exit(char *fun, int num);
-static int find_two_greater(int n);
 static void usage(char const *program_name);
 static void usage_with_return(char const *program_name, int return_no);
 
@@ -105,26 +103,6 @@ static void handle_arguments(int argc, char const *argv[])
     test_input(argv[0]);
 }
 
-static int is_number(char const *string)
-{
-    /* Skip whitespace. */
-    while (isspace(*string) && *string != '\0')
-        string++;
-
-    /* Handle single + or -. */
-    if (!(isdigit(*string) || *string == '+' || *string == '-'))
-        return 0;
-
-    string++;
-    while (*string != '\0') {
-        if (!isdigit(*string))
-            return 0;
-        string++;
-    }
-
-    return 1;
-}
-
 static void test_input(char const *program_name)
 {
     if (length <= 0)
@@ -143,19 +121,6 @@ static void print_err_exit(char *fun, int num)
             strerror(errno));
 
     exit(EXIT_FAILURE);
-}
-
-static int find_two_greater(int n)
-{
-    int a = 1;
-    int b = 1;
-
-    while (a < n) {
-        a <<= 1;
-        b += 1;
-    }
-
-    return b;
 }
 
 static void usage(char const *program_name)
