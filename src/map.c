@@ -89,6 +89,25 @@ void map_square_diamond(map_t *m)
     divide(m, m->max);
 }
 
+map_t map_cpy(map_t *m)
+{
+    int i, j;
+    map_t copy;
+
+    copy.side_len = m->side_len;
+    copy.water_height = m->water_height;
+    copy.max = m->max;
+    copy.roughness = m->roughness;
+
+    copy.height = malloc(sizeof(unsigned int) * m->side_len * m->side_len);
+    /*memcpy(copy.height, m->height, m->side_len * m->side_len);*/
+    for (i = 0; i < m->side_len; i++)
+        for (j = 0; j < m->side_len; j++)
+            copy.height[i][j] = m->height[i][j];
+
+    return copy;
+}
+
 static char * horizontal_line(size_t size, int digits_per_num);
 
 void map_print(map_t *m, FILE *f)

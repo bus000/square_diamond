@@ -44,4 +44,8 @@ int map_shallow_cmp(map_t const *m1, map_t const *m2);
 /* Print map to the file pointer f. */
 void map_print(map_t *m, FILE *f);
 
+/* Copy the map pointed to by m to the map that is returned by the function.
+ * The function also copies the underlying array so all changing is safe. */
+map_t map_cpy(map_t *m);
+
 #endif
