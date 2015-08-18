@@ -65,11 +65,14 @@ int map_get_height(map_t const *m, int x, int y)
     return m->height[x][y];
 }
 
+/* TODO: test if setting an illegal value or setting non existing
+ * coordinates. */
 void map_set_height(map_t *m, int x, int y, int value)
 {
     m->height[x][y] = value;
 }
 
+/* TODO: test if setting a value greater than max or smaller than min. */
 void map_set_water_height(map_t *m, int height)
 {
     m->water_height = height;
