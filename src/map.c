@@ -99,11 +99,10 @@ map_t map_cpy(map_t *m)
     copy.max = m->max;
     copy.roughness = m->roughness;
 
-    copy.height = malloc(sizeof(unsigned int) * m->side_len * m->side_len);
-    /*memcpy(copy.height, m->height, m->side_len * m->side_len);*/
+    copy.height = alloc_height_arr(m->side_len);
     for (i = 0; i < m->side_len; i++)
         for (j = 0; j < m->side_len; j++)
-            copy.height[i][j] = m->height[i][j];
+            map_set_height(&copy, i, j, map_get_height(m, i, j));
 
     return copy;
 }
