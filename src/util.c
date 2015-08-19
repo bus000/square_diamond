@@ -31,7 +31,7 @@ int find_two_greater(int n)
         b += 1;
     }
 
-    return b;
+    return b - 1;
 }
 
 inline int pow_2(int n)
