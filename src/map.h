@@ -27,8 +27,8 @@ int map_get_height(map_t const *m, int x, int y);
 /* Set the height of the map in a specific point. */
 void map_set_height(map_t *m, int x, int y, int value);
 
-/* Set a height for water. */
-void map_set_water_height(map_t *m, int new_height);
+/* Set a height for water return non 0 on error. */
+int map_set_water_height(map_t *m, int new_height);
 
 /* Run the square diamond algorithm on the map to generate a terrain. */
 void map_square_diamond(map_t *m);
