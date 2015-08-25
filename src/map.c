@@ -72,10 +72,14 @@ void map_set_height(map_t *m, int x, int y, int value)
     m->height[x][y] = value;
 }
 
-/* TODO: test if setting a value greater than max or smaller than min. */
-void map_set_water_height(map_t *m, int height)
+int map_set_water_height(map_t *m, int height)
 {
+    if (height < 0 || height > m->max)
+        return EINVAL;
+
     m->water_height = height;
+
+    return 0;
 }
 
 /* Choose height of initial corners and call map_calculate_height on the map. */
