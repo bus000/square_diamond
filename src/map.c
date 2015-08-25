@@ -93,7 +93,7 @@ void map_square_diamond(map_t *m)
     divide(m, m->max);
 }
 
-map_t map_cpy(map_t *m)
+map_t map_cpy(map_t const *m)
 {
     int i, j;
     map_t copy;
@@ -113,7 +113,7 @@ map_t map_cpy(map_t *m)
 
 static char * horizontal_line(size_t size, int digits_per_num);
 
-void map_print(map_t *m, FILE *f)
+void map_print(map_t const *m, FILE *f)
 {
     int i, j;
     int digits_per_num = 1;
