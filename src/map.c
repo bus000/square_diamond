@@ -140,6 +140,11 @@ void map_print(map_t const *m, FILE *f)
     free(line);
 }
 
+inline int map_is_water(map_t const *m, int x, int y)
+{
+    return map_get_height(m, x, y) <= m->water_height;
+}
+
 static char * horizontal_line(size_t size, int digits_per_num)
 {
     int line_len = size * (digits_per_num + 3) + 2;
@@ -212,10 +217,17 @@ int map_save_as_png(map_t const *m, char const *filename, size_t height,
         for (x = 0; x < bitmap.width; x++) {
             tmp_height = map_get_height(m, x, y);
 
-            pixel = pixel_at(&bitmap, x, y);
-            pixel->red = pix(tmp_height, m->max);
-            pixel->green = pix(tmp_height, m->max);
-            pixel->blue = pix(tmp_height, m->max);
+            if (map_is_water(m, x, y)) {
+                pixel = pixel_at(&bitmap, x, y);
+                pixel->red = pix(0, m->max);
+                pixel->green = pix(0, m->max);
+                pixel->blue = pix(m->water_height, m->max);
+            } else {
+                pixel = pixel_at(&bitmap, x, y);
+                pixel->red = pix(tmp_height, m->max);
+                pixel->green = pix(tmp_height, m->max);
+                pixel->blue = pix(tmp_height, m->max);
+            }
         }
     }
 

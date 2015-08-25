@@ -48,4 +48,7 @@ void map_print(map_t const *m, FILE *f);
  * The function also copies the underlying array so all changing is safe. */
 map_t map_cpy(map_t const *m);
 
+/* Find out if point on a map is water or not. */
+int map_is_water(map_t const *m, int x, int y);
+
 #endif
