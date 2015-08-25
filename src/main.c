@@ -52,44 +52,44 @@ static void handle_arguments(int argc, char const *argv[])
     while (++next_arg < argc) {
         if (*(argv[next_arg]) == '-') {
             switch (*(argv[next_arg]+1)) {
-                case 'l':
-                    if (next_arg == argc-1) {
-                        usage(argv[0]);
-                    } else if (!is_number(argv[next_arg+1])) {
-                        usage(argv[0]);
-                    } else {
-                        length = strtol(argv[next_arg+1], NULL, 10);
-                        next_arg += 1;
-                    }
-
-                    break;
-                case 'w':
-                    if (next_arg == argc-1) {
-                        usage(argv[0]);
-                    } else if (!is_number(argv[next_arg+1])) {
-                        usage(argv[0]);
-                    } else {
-                        width = strtol(argv[next_arg+1], NULL, 10);
-                        next_arg += 1;
-                    }
-
-                    break;
-                case 'r':
-                    if (next_arg == argc-1) {
-                        usage(argv[0]);
-                    } else if ((roughness = strtod(argv[next_arg+1], NULL)) == 0.0) {
-                        if (errno != 0)
-                            usage(argv[0]);
-                    }
-                    next_arg += 1;
-
-                    break;
-                case 'h':
-                    usage_with_return(argv[0], EXIT_SUCCESS);
-                    break;
-                default:
+            case 'l':
+                if (next_arg == argc-1) {
                     usage(argv[0]);
-                    break;
+                } else if (!is_number(argv[next_arg+1])) {
+                    usage(argv[0]);
+                } else {
+                    length = strtol(argv[next_arg+1], NULL, 10);
+                    next_arg += 1;
+                }
+
+                break;
+            case 'w':
+                if (next_arg == argc-1) {
+                    usage(argv[0]);
+                } else if (!is_number(argv[next_arg+1])) {
+                    usage(argv[0]);
+                } else {
+                    width = strtol(argv[next_arg+1], NULL, 10);
+                    next_arg += 1;
+                }
+
+                break;
+            case 'r':
+                if (next_arg == argc-1) {
+                    usage(argv[0]);
+                } else if ((roughness = strtod(argv[next_arg+1], NULL)) == 0.0) {
+                    if (errno != 0)
+                        usage(argv[0]);
+                }
+                next_arg += 1;
+
+                break;
+            case 'h':
+                usage_with_return(argv[0], EXIT_SUCCESS);
+                break;
+            default:
+                usage(argv[0]);
+                break;
             }
         } else {
             if (next_arg+1 < argc) { /* Not last argument. */
