@@ -27,79 +27,48 @@ createMap n = do
             (R.Z :. x :. y) | x == (sideLen - 1) && y == (sideLen - 1) -> se
             otherwise -> 0
 
-    asdf <- diamondStep heightMap [Square (Point 0 0) (sideLen - 1)]
-    asdf2 <- squareStep (fst asdf) (snd asdf)
+    (arr1, figures1) <- step heightMap [Square (Point halfLen halfLen) halfLen]
+    (arr2, figures2) <- step arr1 figures1
+    (arr3, figures3) <- step arr2 figures2
+    (arr4, figures4) <- step arr3 figures3
+    (arr5, figures5) <- step arr4 figures4
+    (arr6, figures6) <- step arr5 figures5
 
-    return . Test . fst $ asdf2
+    traceShowM figures6
+
+    return . Test $ arr6
   where
     sideLen = (2^(fromIntegral n)) + 1
-
--- TODO: Remove show
-diamondStep :: (R.Source s e, Integral e, Integral a, C.MonadRandom m, C.Random e)
-    => R.Array s R.DIM2 e
-    -- ^ Array to perform diamond step on.
-    -> [Square a]
-    -- ^ The squares to perform the diamond step on.
-    -> m (R.Array R.D R.DIM2 e, [Diamond a])
-diamondStep arr squares = do
-    squareLookup <- Map.fromList <$> C.mapM f squares
-
-    let arr' = R.traverse arr id $ \lookup pos ->
-            case Map.lookup pos squareLookup of
-                Just height -> height
-                Nothing -> lookup pos
-
-    return (arr', diamonds)
-  where
-    {-diamonds = filter insideExtend . concatMap diamondsInSquare squares-}
-    diamonds = concatMap diamondsInSquare squares
-
-    f square = do
-        randomChange <- C.getRandomR (0, 10) -- TODO: Should not be hardcoded.
-
-        let cornerValues = map fromIntegral . map (arr R.!) . map toIndex
-                . squareCorners $ square :: [Word.Word32]
-            average = fromIntegral . (`div` 4) . sum $ cornerValues
-
-        return (toIndex . squareMiddle $ square, average + randomChange)
-
-
-    {-f square = (,) <$> pure (toIndex . squareMiddle $ square)-}
-        {-<*> C.getRandomR (0, 10)-}
-
-diamondsInSquare :: (Num a, Integral a) => Square a -> [Diamond a]
-diamondsInSquare (Square (Point x y) sideLen) = [d1, d2, d3, d4]
-  where
     halfLen = sideLen `div` 2
-    d1 = Diamond (Point (x + halfLen) y) halfLen
-    d2 = Diamond (Point x (y + halfLen)) halfLen
-    d3 = Diamond (Point (x + halfLen) (y + sideLen)) halfLen
-    d4 = Diamond (Point (x + sideLen) (y + halfLen)) halfLen
 
-squareStep :: (R.Source s e, Integral e, Integral a, C.MonadRandom m, C.Random e)
+-- TODO: Remove show.
+step :: (R.Source s e, Integral e, Integral a, C.MonadRandom m, C.Random e, Show a)
     => R.Array s R.DIM2 e
-    -> [Diamond a]
-    -> m (R.Array R.D R.DIM2 e, [Square a])
-squareStep arr diamonds = do
-    diamondLookup <- Map.fromList <$> C.mapM f diamonds
+    -- ^ Array to perform step on.
+    -> [Figure a]
+    -- ^ The figures to set centers of.
+    -> m (R.Array R.D R.DIM2 e, [Figure a])
+step arr figures = do
+    newValues <- Map.fromList <$> C.mapM f figures
 
     let arr' = R.traverse arr id $ \lookup pos ->
-            case Map.lookup pos diamondLookup of
-                Just height -> height
-                Nothing -> lookup pos
+            maybe (lookup pos) id $ Map.lookup pos newValues
 
-    return (arr', squares)
+    return (arr', filter (centerInside (fromIntegral x) (fromIntegral y)) subfigures)
   where
-    squares = []
+    subfigures = concatMap getSubFigures figures
 
-    f diamond = do
-        randomChange <- C.getRandomR (0, 10) -- TODO: Should not be hardcoded and should also be negative.
+    (R.Z :. x :. y) = R.extent arr
 
-        let cornerValues = map fromIntegral . map (arr R.!) . map toIndex
-                . diamondSides $ diamond :: [Word.Word32]
+    f figure = do
+        -- TODO: Should not be hardcoded and should also be negative.
+        randomChange <- C.getRandomR (0, 10)
+
+        let corners = map toIndex . figureCorners $ figure
+            cornerValues = map fromIntegral . map (arr R.!) $ corners :: [Word.Word32]
             average = fromIntegral . (`div` 4) . sum $ cornerValues
 
-        return (toIndex . _center $ diamond, average + randomChange)
+        return (toIndex . _center $ figure, average + randomChange)
 
 data Point a = Point { _x :: !a, _y :: !a }
   deriving (Show, Eq, Ord)
@@ -110,29 +79,44 @@ toIndex (Point x y) = R.ix2 (fromIntegral x) (fromIntegral y)
 fromIndex :: Integral a => R.DIM2 -> Point a
 fromIndex (R.Z :. x :. y) = Point (fromIntegral x) (fromIntegral y)
 
-data Square a = Square { _upperLeft :: !(Point a), _squareSideLen :: !a }
+data Figure a
+    = Square { _center :: !(Point a), _sideLen :: !a }
+    | Diamond { _center :: !(Point a), _sideLen :: !a }
+  deriving (Show, Eq, Ord)
 
-squareMiddle :: (Num a, Integral a) => Square a -> Point a
-squareMiddle (Square (Point x y) len) = Point (x + halfLen) (y + halfLen)
-  where
-    halfLen = ceiling $ fromIntegral len / 2
-
-squareCorners :: Num a => Square a -> [Point a]
-squareCorners (Square (Point x y) sideLen) =
-    [ Point x y
-    , Point (x + sideLen) y
-    , Point x (y + sideLen)
+figureCorners :: (Num a, Integral a) => Figure a -> [Point a]
+figureCorners (Square (Point x y) sideLen) =
+    [ Point (x - sideLen) (y - sideLen)
+    , Point (x - sideLen) (y + sideLen)
+    , Point (x + sideLen) (y - sideLen)
     , Point (x + sideLen) (y + sideLen)
     ]
+figureCorners (Diamond (Point x y) sideLen) =
+    [ Point (x + sideLen) y
+    , Point (x - sideLen) y
+    , Point x (y + sideLen)
+    , Point x (y - sideLen)
+    ]
 
--- TODO: Maybe create special type cornerdiamond that only contains three points.
-data Diamond a = Diamond { _center :: !(Point a), _diamondSideLen :: !a }
-  deriving (Show, Eq)
-
-diamondSides :: Num a => Diamond a -> [Point a]
-diamondSides (Diamond (Point x y) len) = [s1, s2, s3, s4]
+getSubFigures :: Integral a => Figure a -> [Figure a]
+getSubFigures (Square (Point x y) sideLen) =
+    [ Diamond (Point (x + sideLen) y) sideLen
+    , Diamond (Point (x - sideLen) y) sideLen
+    , Diamond (Point x (y + sideLen)) sideLen
+    , Diamond (Point x (y - sideLen)) sideLen
+    ]
+getSubFigures (Diamond (Point x y) sideLen)
+    | halfLen == 0 = []
+    | otherwise =
+        [ Square (Point (x - halfLen) (y - halfLen)) halfLen
+        , Square (Point (x - halfLen) (y + halfLen)) halfLen
+        , Square (Point (x + halfLen) (y - halfLen)) halfLen
+        , Square (Point (x + halfLen) (y + halfLen)) halfLen
+        ]
   where
-    s1 = Point (x + len) y
-    s2 = Point x (y + len)
-    s3 = Point (x - len) y
-    s4 = Point x (y - len)
+    halfLen = sideLen `div` 2
+
+centerInside :: (Ord a, Num a) => a -> a -> Figure a -> Bool
+centerInside x y figure = px >= 0 && py >= 0 && px < x && py < y
+  where
+    Point px py = _center figure
