@@ -27,6 +27,6 @@ instance (R.Source t a, PP.Pretty a) => PP.Pretty (R.Array t R.DIM2 a) where
         R.Z :. n :. _m = R.extent a
 
 main :: IO ()
-main = do 
-    Map.Test map <- Map.createMap 3
+main = do
+    Map.HeightMap map <- Map.createMap 3
     putStr . pack . PP.render . PP.pPrint $ map
