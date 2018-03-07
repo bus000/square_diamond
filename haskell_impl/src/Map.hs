@@ -9,6 +9,7 @@ import qualified Control.Monad.State.Strict as C
 import qualified Data.Array.Repa as R
 import Data.Array.Repa ((:.)(..))
 import qualified Data.Array.Repa.Index as R
+import qualified Data.Array.Repa.IO.DevIL as R
 import qualified Data.Map.Strict as Map
 import qualified Data.Word as Word
 import qualified Prelude
@@ -34,6 +35,11 @@ createMap n = do
   where
     sideLen = (2^(fromIntegral n)) + 1
     halfLen = sideLen `div` 2
+
+saveMap :: R.Source s Word.Word8 => HeightMap s -> FilePath -> IO ()
+saveMap (HeightMap arr) path = R.runIL $ do
+    asdf <- R.copyP arr
+    R.writeImage path (R.Grey asdf)
 
 step :: (R.Source s e, Integral e, Integral a, C.MonadRandom m,
     C.MonadState [Figure a] m, C.Random e)
