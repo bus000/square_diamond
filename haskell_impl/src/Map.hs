@@ -35,28 +35,27 @@ createMap !n = do
             (R.Z :. x :. y) | x == (sideLen - 1) && y == (sideLen - 1) -> se
             otherwise -> 0
 
-    {-HeightMap <$> C.evalStateT (iterateWhile (not . null <$> C.get) step heightMap) figures-}
-    heightMap' <- squareStep (sideLen - 1) heightMap
-    heightMap'' <- diamondStep (sideLen - 1) heightMap'
+        stepSizes = takeWhile (> 1) . Prelude.iterate (`div` 2) $ sideLen - 1
 
-    return . HeightMap $ heightMap''
+    return . HeightMap . foldl' (flip step) heightMap $ stepSizes
   where
     sideLen = (2^(fromIntegral n)) + 1
     halfLen = sideLen `div` 2
+
+    step size = diamondStep size . squareStep size
 
 saveMap :: R.Source s Word.Word8 => HeightMap s -> FilePath -> IO ()
 saveMap !(HeightMap arr) !path = R.runIL $ do
     image <- R.Grey <$> R.copyP arr
     R.writeImage path image
 
-diamondStep :: (R.Source s e, Integral e, Integral a, C.MonadRandom m)
+diamondStep :: (R.Source s e, Integral e, Integral a)
     => Int
     -- ^ Size.
     -> R.Array s R.DIM2 e
     {-- ^ Array to perform diamondStep on.-}
-    -> m (R.Array R.D R.DIM2 e)
-diamondStep !size !arr = do
-    return arr'
+    -> R.Array R.D R.DIM2 e
+diamondStep !size !arr = arr'
   where
     arr' = R.traverse arr id $ \current pos@(R.Z :. x :. y) ->
         if (x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` size == 0) ||
@@ -73,25 +72,23 @@ diamondStep !size !arr = do
 
     halfSize = size `div` 2
 
-squareStep :: (R.Source s e, Integral e, Integral a, C.MonadRandom m)
+squareStep :: (R.Source s e, Integral e, Integral a)
     => Int
     -- ^ Size.
     -> R.Array s R.DIM2 e
     {-- ^ Array to perform squareStep on.-}
-    -> m (R.Array R.D R.DIM2 e)
-squareStep !size !arr = do
-    traceShowM $ "size " ++ show size
-    return arr'
+    -> R.Array R.D R.DIM2 e
+squareStep !size !arr = arr'
   where
     arr' = R.traverse arr id $ \current pos@(R.Z :. x :. y) ->
         if x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` halfSize == 0 && y `mod` size /= 0
-            then traceShow ("In then " ++ show x ++ ", " ++ show y) (
+            then
                 let v1 = fromIntegral $ current $ R.ix2 (x + halfSize) (y + halfSize) :: Word.Word32
                     v2 = fromIntegral $ current $ R.ix2 (x - halfSize) (y + halfSize) :: Word.Word32
                     v3 = fromIntegral $ current $ R.ix2 (x + halfSize) (y - halfSize) :: Word.Word32
                     v4 = fromIntegral $ current $ R.ix2 (x - halfSize) (y - halfSize) :: Word.Word32
-                in fromIntegral $ (v1 + v2 + v3 + v4) `div` 4)
-            else traceShow "In else" (current pos)
+                in fromIntegral $ (v1 + v2 + v3 + v4) `div` 4
+            else current pos
 
     (R.Z :. xMax :. yMax) = R.extent arr
 
