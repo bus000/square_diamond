@@ -13,20 +13,19 @@ import qualified Control.Monad.Random as C
 import qualified Control.Monad.State.Strict as C
 import qualified Data.Array.Repa as R
 import Data.Array.Repa ((:.)(..))
+import qualified Data.Array.Repa.Algorithms.Pixel as R
 import qualified Data.Array.Repa.Index as R
 import qualified Data.Array.Repa.IO.DevIL as R
 import qualified Data.Map.Strict as Map
 import qualified Data.Word as Word
 import qualified Prelude
+import qualified Data.Vector.Unboxed as V
 
--- TODO: Change to doubles using
--- https://hackage.haskell.org/package/repa-algorithms-3.4.1.2/docs/Data-Array-Repa-Algorithms-Pixel.html.
-
-data HeightMap = HeightMap (R.Array R.U R.DIM2 Word.Word8)
+data HeightMap = HeightMap (R.Array R.U R.DIM2 Double)
 
 createMap :: C.MonadRandom m => Word.Word32 -> m HeightMap
 createMap !n = do
-    [nw, ne, sw, se] <- C.replicateM 4 (C.getRandomR (0, 255))
+    [nw, ne, sw, se] <- C.replicateM 4 (C.getRandomR (0.0, 1.0))
 
     let heightMap = R.fromFunction (R.ix2 sideLen sideLen) $ \case
             (R.Z :. x :. y) | x == 0 && y == 0 -> nw
@@ -37,60 +36,80 @@ createMap !n = do
 
         stepSizes = takeWhile (> 1) . Prelude.iterate (`div` 2) $ sideLen - 1
 
-        finalMap = foldl' (flip step) heightMap $ stepSizes
+        {-finalMap = foldl' (flip step) heightMap stepSizes-}
+    finalMap <- C.foldM (flip step) heightMap stepSizes
 
     HeightMap <$> R.computeP finalMap
   where
     sideLen = (2^(fromIntegral n)) + 1
 
-    step size = diamondStep size . squareStep size
+    step size map = squareStep size map >>= diamondStep size
+    {-step size = diamondStep size . squareStep size-}
 
 saveMap :: HeightMap -> FilePath -> IO ()
 saveMap !(HeightMap arr) !path = R.runIL $ do
-    image <- R.Grey <$> R.copyP arr
+    image <- R.RGB <$> R.copyP rgb
     R.writeImage path image
+  where
+    rgbTuple = R.map R.rgb8OfGreyDouble arr
+    rgb = R.traverse rgbTuple (\(R.Z :. x :. y) -> R.ix3 x y 3) toThreeDim
 
-diamondStep :: (R.Source s e, Integral e, Integral a)
+    toThreeDim current (R.Z :. x :. y :. 0) = let (v, _, _) = current (R.ix2 x y) in v
+    toThreeDim current (R.Z :. x :. y :. 1) = let (_, v, _) = current (R.ix2 x y) in v
+    toThreeDim current (R.Z :. x :. y :. 2) = let (_, _, v) = current (R.ix2 x y) in v
+    toThreeDim _ _ = error "Third dimension should be either 0, 1 or 2"
+
+diamondStep :: (R.Source s Double, C.MonadRandom m)
     => Int
     -- ^ Size.
-    -> R.Array s R.DIM2 e
-    {-- ^ Array to perform diamondStep on.-}
-    -> R.Array R.D R.DIM2 e
-diamondStep !size !arr = arr'
+    -> R.Array s R.DIM2 Double
+    -- ^ Array to perform diamondStep on.
+    -> m (R.Array R.D R.DIM2 Double)
+diamondStep !size !arr = do
+    randoms <- randomArray (R.extent arr) 0.0 0.1 -- TODO: Don't hardcode.
+    return $ R.traverse2 arr randoms const diamond
   where
-    arr' = R.traverse arr id $ \current pos@(R.Z :. x :. y) ->
-        if (x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` size == 0) ||
-                (y `mod` halfSize == 0 && y `mod` size /= 0 && x `mod` size == 0)
-            then
-                let v1 = fromIntegral $ current $ R.ix2 (x + halfSize) y :: Word.Word32
-                    v2 = fromIntegral $ current $ R.ix2 (x - halfSize) y :: Word.Word32
-                    v3 = fromIntegral $ current $ R.ix2 x (y + halfSize) :: Word.Word32
-                    v4 = fromIntegral $ current $ R.ix2 x (y - halfSize) :: Word.Word32
-                in fromIntegral $ (v1 + v2 + v3 + v4) `div` 4
-            else current pos
+    diamond current random pos@(R.Z :. x :. y)
+        | (x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` size == 0) ||
+            (y `mod` halfSize == 0 && y `mod` size /= 0 && x `mod` size == 0) =
+                let v1 = current $ R.ix2 (x + halfSize) y
+                    v2 = current $ R.ix2 (x - halfSize) y
+                    v3 = current $ R.ix2 x (y + halfSize)
+                    v4 = current $ R.ix2 x (y - halfSize)
+                in ((v1 + v2 + v3 + v4) / 4) + random pos
+        | otherwise = current pos
 
     (R.Z :. xMax :. yMax) = R.extent arr
 
     halfSize = size `div` 2
 
-squareStep :: (R.Source s e, Integral e, Integral a)
+squareStep :: (R.Source s Double, C.MonadRandom m)
     => Int
     -- ^ Size.
-    -> R.Array s R.DIM2 e
-    {-- ^ Array to perform squareStep on.-}
-    -> R.Array R.D R.DIM2 e
-squareStep !size !arr = arr'
+    -> R.Array s R.DIM2 Double
+    -- ^ Array to perform squareStep on.
+    -> m (R.Array R.D R.DIM2 Double)
+squareStep !size !arr = do
+    randoms <- randomArray (R.extent arr) (-0.1) 0.1 -- TODO: Don't hardcode.
+    return $ R.traverse2 arr randoms const square
   where
-    arr' = R.traverse arr id $ \current pos@(R.Z :. x :. y) ->
-        if x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` halfSize == 0 && y `mod` size /= 0
-            then
-                let v1 = fromIntegral $ current $ R.ix2 (x + halfSize) (y + halfSize) :: Word.Word32
-                    v2 = fromIntegral $ current $ R.ix2 (x - halfSize) (y + halfSize) :: Word.Word32
-                    v3 = fromIntegral $ current $ R.ix2 (x + halfSize) (y - halfSize) :: Word.Word32
-                    v4 = fromIntegral $ current $ R.ix2 (x - halfSize) (y - halfSize) :: Word.Word32
-                in fromIntegral $ (v1 + v2 + v3 + v4) `div` 4
-            else current pos
+    square current random pos@(R.Z :. x :. y)
+        | x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` halfSize == 0 && y `mod` size /= 0 =
+            let v1 = current $ R.ix2 (x + halfSize) (y + halfSize)
+                v2 = current $ R.ix2 (x - halfSize) (y + halfSize)
+                v3 = current $ R.ix2 (x + halfSize) (y - halfSize)
+                v4 = current $ R.ix2 (x - halfSize) (y - halfSize)
+            in ((v1 + v2 + v3 + v4) / 4) + random pos
+        | otherwise = current pos
+
+    {-safeGet current x y-}
+        {-| x < 0 || y < 0-}
 
     (R.Z :. xMax :. yMax) = R.extent arr
 
     halfSize = size `div` 2
+
+randomArray :: (C.MonadRandom m, R.Shape sh, C.Random a, V.Unbox a) => sh -> a -> a -> m (R.Array R.U sh a)
+randomArray shape lower upper = do
+    randoms <- V.replicateM (R.size shape) (C.getRandomR (lower, upper))
+    return $ R.fromUnboxed shape randoms
