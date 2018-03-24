@@ -76,6 +76,7 @@ diamondStep !size !arr = do
                     v2 = current $ R.ix2 (x - halfSize) y
                     v3 = current $ R.ix2 x (y + halfSize)
                     v4 = current $ R.ix2 x (y - halfSize)
+                -- TODO: min max
                 in ((v1 + v2 + v3 + v4) / 4) + random pos
         | otherwise = current pos
 
@@ -99,6 +100,7 @@ squareStep !size !arr = do
                 v2 = current $ R.ix2 (x - halfSize) (y + halfSize)
                 v3 = current $ R.ix2 (x + halfSize) (y - halfSize)
                 v4 = current $ R.ix2 (x - halfSize) (y - halfSize)
+            -- TODO: min max
             in ((v1 + v2 + v3 + v4) / 4) + random pos
         | otherwise = current pos
 
