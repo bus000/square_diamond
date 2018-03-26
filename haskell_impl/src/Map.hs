@@ -10,20 +10,16 @@ module Map
 import ClassyPrelude
 import qualified Control.Monad as C
 import qualified Control.Monad.Random as C
-import qualified Control.Monad.State.Strict as C
 import qualified Data.Array.Repa as R
 import Data.Array.Repa ((:.)(..))
 import qualified Data.Array.Repa.Algorithms.Pixel as R
-import qualified Data.Array.Repa.Index as R
 import qualified Data.Array.Repa.IO.DevIL as R
-import qualified Data.Map.Strict as Map
-import qualified Data.Word as Word
 import qualified Prelude
 import qualified Data.Vector.Unboxed as V
 
 data HeightMap = HeightMap (R.Array R.U R.DIM2 Double)
 
-createMap :: C.MonadRandom m => Word.Word32 -> m HeightMap
+createMap :: C.MonadRandom m => Int -> m HeightMap
 createMap !n = do
     [nw, ne, sw, se] <- C.replicateM 4 (C.getRandomR (0.0, 1.0))
 
@@ -32,19 +28,15 @@ createMap !n = do
             (R.Z :. x :. y) | x == 0 && y == (sideLen - 1) -> sw
             (R.Z :. x :. y) | x == (sideLen - 1) && y == 0 -> ne
             (R.Z :. x :. y) | x == (sideLen - 1) && y == (sideLen - 1) -> se
-            otherwise -> 0
-
+            _ | otherwise -> 0
         stepSizes = takeWhile (> 1) . Prelude.iterate (`div` 2) $ sideLen - 1
 
-        {-finalMap = foldl' (flip step) heightMap stepSizes-}
     finalMap <- C.foldM (flip step) heightMap stepSizes
 
     HeightMap <$> R.computeP finalMap
   where
-    sideLen = (2^(fromIntegral n)) + 1
-
-    step size map = squareStep size map >>= diamondStep size
-    {-step size = diamondStep size . squareStep size-}
+    sideLen = (2^n) + 1
+    step size heightMap = squareStep size heightMap >>= diamondStep size
 
 saveMap :: HeightMap -> FilePath -> IO ()
 saveMap !(HeightMap arr) !path = R.runIL $ do
@@ -72,13 +64,16 @@ diamondStep !size !arr = do
     diamond current random pos@(R.Z :. x :. y)
         | (x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` size == 0) ||
             (y `mod` halfSize == 0 && y `mod` size /= 0 && x `mod` size == 0) =
-                let v1 = current $ R.ix2 (x + halfSize) y
-                    v2 = current $ R.ix2 (x - halfSize) y
-                    v3 = current $ R.ix2 x (y + halfSize)
-                    v4 = current $ R.ix2 x (y - halfSize)
-                -- TODO: min max
-                in ((v1 + v2 + v3 + v4) / 4) + random pos
+                let v1 = safeGet current (x + halfSize) y
+                    v2 = safeGet current (x - halfSize) y
+                    v3 = safeGet current x (y + halfSize)
+                    v4 = safeGet current x (y - halfSize)
+                in probability $ ((v1 + v2 + v3 + v4) / 4) + random pos
         | otherwise = current pos
+
+    safeGet current x y
+        | x < 0 || y < 0 || x >= xMax || y >= yMax = 0
+        | otherwise = current $ R.ix2 x y
 
     (R.Z :. xMax :. yMax) = R.extent arr
 
@@ -96,16 +91,16 @@ squareStep !size !arr = do
   where
     square current random pos@(R.Z :. x :. y)
         | x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` halfSize == 0 && y `mod` size /= 0 =
-            let v1 = current $ R.ix2 (x + halfSize) (y + halfSize)
-                v2 = current $ R.ix2 (x - halfSize) (y + halfSize)
-                v3 = current $ R.ix2 (x + halfSize) (y - halfSize)
-                v4 = current $ R.ix2 (x - halfSize) (y - halfSize)
-            -- TODO: min max
-            in ((v1 + v2 + v3 + v4) / 4) + random pos
+            let v1 = safeGet current (x + halfSize) (y + halfSize)
+                v2 = safeGet current (x - halfSize) (y + halfSize)
+                v3 = safeGet current (x + halfSize) (y - halfSize)
+                v4 = safeGet current (x - halfSize) (y - halfSize)
+            in probability $ ((v1 + v2 + v3 + v4) / 4) + random pos
         | otherwise = current pos
 
-    {-safeGet current x y-}
-        {-| x < 0 || y < 0-}
+    safeGet current x y
+        | x < 0 || y < 0 || x >= xMax || y >= yMax = 0
+        | otherwise = current $ R.ix2 x y
 
     (R.Z :. xMax :. yMax) = R.extent arr
 
@@ -115,3 +110,9 @@ randomArray :: (C.MonadRandom m, R.Shape sh, C.Random a, V.Unbox a) => sh -> a -
 randomArray shape lower upper = do
     randoms <- V.replicateM (R.size shape) (C.getRandomR (lower, upper))
     return $ R.fromUnboxed shape randoms
+
+probability :: Double -> Double
+probability x
+    | x > 1.0 = 1.0
+    | x < 0.0 = 0.0
+    | otherwise = x
