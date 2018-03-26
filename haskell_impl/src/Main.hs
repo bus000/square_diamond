@@ -28,7 +28,7 @@ instance (R.Source t a, PP.Pretty a) => PP.Pretty (R.Array t R.DIM2 a) where
 
 main :: IO ()
 main = do
-    {-Map.HeightMap heightmap <- Map.createMap 6-}
+    {-Map.HeightMap heightmap <- Map.createMap 3-}
     {-putStr . pack . PP.render . PP.pPrint $ heightmap-}
 
     heightmap <- Map.createMap 8
