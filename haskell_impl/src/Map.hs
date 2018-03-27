@@ -58,13 +58,13 @@ diamondStep :: (R.Source s a, Num a, Fractional a, Ord a)
 diamondStep !size !arr = R.traverse arr id diamond
   where
     diamond current pos@(R.Z :. x :. y)
-        | diamondPoint x y = trace ("diamond\t\t\t" ++ show x ++ "\t" ++ show y) $ diamondSquareValue
+        | diamondPoint x y = diamondSquareValue
             (safeGet current (x + halfSize) y)
             (safeGet current (x - halfSize) y)
             (safeGet current x (y + halfSize))
             (safeGet current x (y - halfSize))
             (current $ R.ix2 x y)
-        | otherwise = trace ("otherwise diamond\t" ++ show x ++ " " ++ show y) $ current pos
+        | otherwise = current pos
 
     safeGet current x y
         | R.inShape (R.extent arr) (R.ix2 x y) = current $ R.ix2 x y
@@ -85,13 +85,13 @@ squareStep :: (R.Source s a, Num a, Fractional a, Ord a)
 squareStep !size !arr = R.traverse arr id square
   where
     square current pos@(R.Z :. x :. y)
-        | squarePoint x y = trace ("square\t\t\t" ++ show x ++ "\t" ++ show y) $ diamondSquareValue
+        | squarePoint x y = diamondSquareValue
             (safeGet current (x + halfSize) (y + halfSize))
             (safeGet current (x - halfSize) (y + halfSize))
             (safeGet current (x + halfSize) (y - halfSize))
             (safeGet current (x - halfSize) (y - halfSize))
             (current $ R.ix2 x y)
-        | otherwise = trace ("otherwise square\t" ++ show x ++ "\t" ++ show y) $ current pos
+        | otherwise = current pos
 
     safeGet current x y
         | R.inShape (R.extent arr) (R.ix2 x y) = current $ R.ix2 x y
