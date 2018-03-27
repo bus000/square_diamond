@@ -26,7 +26,10 @@ createMap !n = do
 
     let finalMap = foldl' (flip step) randoms stepSizes
 
-    HeightMap <$> R.computeP finalMap
+    traceM $ "just before " ++ show sideLen
+    adsf <- HeightMap <$> R.computeP finalMap
+    traceM "done"
+    return adsf
   where
     sideLen = (2^n) + 1
     stepSizes = takeWhile (> 1) . Prelude.iterate (`div` 2) $ sideLen - 1
@@ -45,54 +48,85 @@ saveMap !(HeightMap arr) !path = R.runIL $ do
     toThreeDim current (R.Z :. x :. y :. 2) = let (_, _, v) = current (R.ix2 x y) in v
     toThreeDim _ _ = error "Third dimension should be either 0, 1 or 2"
 
-diamondStep :: (R.Source s Double)
+diamondStep :: (R.Source s a, Num a, Fractional a, Ord a)
     => Int
     -- ^ Size.
-    -> R.Array s R.DIM2 Double
+    -> R.Array s R.DIM2 a
     -- ^ Array to perform diamondStep on.
-    -> R.Array R.D R.DIM2 Double
-diamondStep !size !arr = R.traverse arr id diamond
+    -> R.Array R.D R.DIM2 a
+diamondStep !size !arr = trace "diamond" $ R.traverse arr id diamond
   where
     diamond current pos@(R.Z :. x :. y)
-        | (x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` size == 0) ||
-            (y `mod` halfSize == 0 && y `mod` size /= 0 && x `mod` size == 0) =
-                let v1 = safeGet current (x + halfSize) y
-                    v2 = safeGet current (x - halfSize) y
-                    v3 = safeGet current x (y + halfSize)
-                    v4 = safeGet current x (y - halfSize)
-                    v5 = current $ R.ix2 x y
-                in probability $ ((v1 + v2 + v3 + v4) / 4) + 0.1 * v5
+        | diamondPoint x y = diamondSquareValue
+            (safeGet current (x + halfSize) y)
+            (safeGet current (x - halfSize) y)
+            (safeGet current x (y + halfSize))
+            (safeGet current x (y - halfSize))
+            (current $ R.ix2 x y)
         | otherwise = current pos
 
     safeGet current x y
         | R.inShape (R.extent arr) (R.ix2 x y) = current $ R.ix2 x y
         | otherwise = 0
 
+    diamondPoint x y =
+        (x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` size == 0) ||
+        (y `mod` halfSize == 0 && y `mod` size /= 0 && x `mod` size == 0)
+
     halfSize = size `div` 2
 
-squareStep :: (R.Source s Double)
+squareStep :: (R.Source s a, Num a, Fractional a, Ord a)
     => Int
     -- ^ Size.
-    -> R.Array s R.DIM2 Double
+    -> R.Array s R.DIM2 a
     -- ^ Array to perform squareStep on.
-    -> R.Array R.D R.DIM2 Double
-squareStep !size !arr = R.traverse arr id square
+    -> R.Array R.D R.DIM2 a
+squareStep !size !arr = trace "square" $ R.traverse arr id square
   where
     square current pos@(R.Z :. x :. y)
-        | x `mod` halfSize == 0 && x `mod` size /= 0 && y `mod` halfSize == 0 && y `mod` size /= 0 =
-            let v1 = safeGet current (x + halfSize) (y + halfSize)
-                v2 = safeGet current (x - halfSize) (y + halfSize)
-                v3 = safeGet current (x + halfSize) (y - halfSize)
-                v4 = safeGet current (x - halfSize) (y - halfSize)
-                v5 = current $ R.ix2 x y
-            in probability $ ((v1 + v2 + v3 + v4) / 4) + 0.1 * v5
+        | squarePoint x y = diamondSquareValue
+            (safeGet current (x + halfSize) (y + halfSize))
+            (safeGet current (x - halfSize) (y + halfSize))
+            (safeGet current (x + halfSize) (y - halfSize))
+            (safeGet current (x - halfSize) (y - halfSize))
+            (current $ R.ix2 x y)
         | otherwise = current pos
 
     safeGet current x y
         | R.inShape (R.extent arr) (R.ix2 x y) = current $ R.ix2 x y
         | otherwise = 0
 
+    squarePoint x y =
+        x `mod` halfSize == 0 &&
+        x `mod` size /= 0 &&
+        y `mod` halfSize == 0 &&
+        y `mod` size /= 0
+
     halfSize = size `div` 2
+
+{- Compute the new value of a field in the diamond square algorithm by taking
+ - the 4 corners around eiher the center of a square or a diamond and a random
+ - number between -1 and 1. The result is the average of the 4 corners with the
+ - random number scaled and added. -}
+{-# INLINE diamondSquareValue #-}
+diamondSquareValue :: (Num a, Fractional a, Ord a) => a
+    -- ^ First corner value.
+    -> a
+    -- ^ Second corner value.
+    -> a
+    -- ^ Third corner value.
+    -> a
+    -- ^ Fourth corner value.
+    -> a
+    -- ^ Random number between -1.0 and 1.0.
+    -> a
+diamondSquareValue !a !b !c !d !random
+    | newValue > 1.0 = 1.0
+    | newValue < 0.0 = 0.0
+    | otherwise = newValue
+  where
+    newValue = ave + 0.1*random
+    ave = (a + b + c + d) / 4
 
 {- | Create an array of the type and shape given with random values between
  - below and above. If called as randomArray shape lower upper an array of shape
@@ -107,16 +141,6 @@ randomArray :: (C.MonadRandom m, R.Shape sh, C.Random a, V.Unbox a) => sh
 randomArray shape lower upper = do
     randoms <- V.replicateM (R.size shape) (C.getRandomR (lower, upper))
     return $ R.fromUnboxed shape randoms
-
-{- | Bound a double between 0.0 and 1.0 like a probability. If outside the
- - bounds the max/min value are returned.-}
-probability :: Double
-    -- ^ Double to bound.
-    -> Double
-probability x
-    | x > 1.0 = 1.0
-    | x < 0.0 = 0.0
-    | otherwise = x
 
 {- | Make sure the corner values in the array are positive. -}
 cornerPositive :: (R.Source r a, R.Shape sh, Num a) => R.Array r sh a
