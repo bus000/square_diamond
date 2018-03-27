@@ -8,6 +8,7 @@ import qualified Data.Array.Repa.Algorithms.Matrix as R
 import qualified Data.Word as Word
 import qualified Map as Map
 import qualified Prelude as Prelude
+import qualified System.Environment as Sys
 import qualified Text.PrettyPrint as PP
 import qualified Text.PrettyPrint.HughesPJClass as PP
 
@@ -31,5 +32,7 @@ main = do
     {-Map.HeightMap heightmap <- Map.createMap 3-}
     {-putStr . pack . PP.render . PP.pPrint $ heightmap-}
 
-    heightmap <- Map.createMap 8
+    [size] <- Sys.getArgs
+
+    heightmap <- Map.createMap (Prelude.read size)
     Map.saveMap heightmap "output.png"

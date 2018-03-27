@@ -23,17 +23,18 @@ data HeightMap = HeightMap (R.Array R.U R.DIM2 Double)
 createMap :: C.MonadRandom m => Int -> m HeightMap
 createMap !n = do
     randoms <- cornerPositive <$> randomArray (R.ix2 sideLen sideLen) (-1.0) 1.0
+    randoms <- R.computeP randoms
 
-    let finalMap = foldl' (flip step) randoms stepSizes
-
-    traceM $ "just before " ++ show sideLen
-    adsf <- HeightMap <$> R.computeP finalMap
-    traceM "done"
-    return adsf
+    HeightMap <$> C.foldM step randoms stepSizes
   where
     sideLen = (2^n) + 1
     stepSizes = takeWhile (> 1) . Prelude.iterate (`div` 2) $ sideLen - 1
-    step size = diamondStep size . squareStep size
+
+    step heightMap size
+        = R.computeP
+        . diamondStep size
+        . squareStep size
+        $ heightMap
 
 saveMap :: HeightMap -> FilePath -> IO ()
 saveMap !(HeightMap arr) !path = R.runIL $ do
@@ -54,16 +55,16 @@ diamondStep :: (R.Source s a, Num a, Fractional a, Ord a)
     -> R.Array s R.DIM2 a
     -- ^ Array to perform diamondStep on.
     -> R.Array R.D R.DIM2 a
-diamondStep !size !arr = trace "diamond" $ R.traverse arr id diamond
+diamondStep !size !arr = R.traverse arr id diamond
   where
     diamond current pos@(R.Z :. x :. y)
-        | diamondPoint x y = diamondSquareValue
+        | diamondPoint x y = trace ("diamond\t\t\t" ++ show x ++ "\t" ++ show y) $ diamondSquareValue
             (safeGet current (x + halfSize) y)
             (safeGet current (x - halfSize) y)
             (safeGet current x (y + halfSize))
             (safeGet current x (y - halfSize))
             (current $ R.ix2 x y)
-        | otherwise = current pos
+        | otherwise = trace ("otherwise diamond\t" ++ show x ++ " " ++ show y) $ current pos
 
     safeGet current x y
         | R.inShape (R.extent arr) (R.ix2 x y) = current $ R.ix2 x y
@@ -81,16 +82,16 @@ squareStep :: (R.Source s a, Num a, Fractional a, Ord a)
     -> R.Array s R.DIM2 a
     -- ^ Array to perform squareStep on.
     -> R.Array R.D R.DIM2 a
-squareStep !size !arr = trace "square" $ R.traverse arr id square
+squareStep !size !arr = R.traverse arr id square
   where
     square current pos@(R.Z :. x :. y)
-        | squarePoint x y = diamondSquareValue
+        | squarePoint x y = trace ("square\t\t\t" ++ show x ++ "\t" ++ show y) $ diamondSquareValue
             (safeGet current (x + halfSize) (y + halfSize))
             (safeGet current (x - halfSize) (y + halfSize))
             (safeGet current (x + halfSize) (y - halfSize))
             (safeGet current (x - halfSize) (y - halfSize))
             (current $ R.ix2 x y)
-        | otherwise = current pos
+        | otherwise = trace ("otherwise square\t" ++ show x ++ "\t" ++ show y) $ current pos
 
     safeGet current x y
         | R.inShape (R.extent arr) (R.ix2 x y) = current $ R.ix2 x y
