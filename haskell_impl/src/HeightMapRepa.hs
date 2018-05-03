@@ -1,21 +1,18 @@
-{-# LANGUAGE LambdaCase       #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE BangPatterns     #-}
-module Map
+module HeightMapRepa
     ( createMap
     , saveMap
     , HeightMap(..) -- TODO: Remove constructor.
     ) where
 
-import ClassyPrelude
 import qualified Control.Monad as C
 import qualified Control.Monad.Random as C
 import qualified Data.Array.Repa as R
 import Data.Array.Repa ((:.)(..))
 import qualified Data.Array.Repa.Algorithms.Pixel as R
-import qualified Data.Array.Repa.Shape as R
 import qualified Data.Array.Repa.IO.DevIL as R
-import qualified Prelude
+import qualified Data.Array.Repa.Shape as R
 import qualified Data.Vector.Unboxed as V
 
 data HeightMap = HeightMap (R.Array R.U R.DIM2 Double)

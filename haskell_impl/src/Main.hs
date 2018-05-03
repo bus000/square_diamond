@@ -1,13 +1,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Main where
 
-import ClassyPrelude
 import qualified Data.Array.Repa as R
 import Data.Array.Repa ((:.)(..))
 import qualified Data.Array.Repa.Algorithms.Matrix as R
 import qualified Data.Word as Word
-import qualified Map as Map
-import qualified Prelude as Prelude
+import qualified HeightMapRepa as HMR
+import qualified HeigtMapMutVec as HMMV
+{-import qualified Prelude as Prelude-}
 import qualified System.Environment as Sys
 import qualified Text.PrettyPrint as PP
 import qualified Text.PrettyPrint.HughesPJClass as PP
@@ -32,7 +32,17 @@ main = do
     {-Map.HeightMap heightmap <- Map.createMap 3-}
     {-putStr . pack . PP.render . PP.pPrint $ heightmap-}
 
+    {-[size] <- Sys.getArgs-}
+
+    {-heightmap <- HMR.createMap (Prelude.read size)-}
+    {-HMR.saveMap heightmap "output.png"-}
+
+
+    -- With vectors.
     [size] <- Sys.getArgs
 
-    heightmap <- Map.createMap (Prelude.read size)
-    Map.saveMap heightmap "output.png"
+    heightMap <- HMMV.createMap (read size)
+
+    {-putStr . pack . PP.render . PP.pPrint $ heightmap-}
+    {-putStr . HMMV.showMap $ heightMap-}
+    HMMV.saveMap heightMap "somefile.png"
