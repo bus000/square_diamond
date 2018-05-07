@@ -72,7 +72,9 @@ diamondStep :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a) => Int
 diamondStep sideLen heightMap size = mapM_ diamond tupleIndices
   where
     yIndices = [0, halfSize..sideLen-1]
-    tupleIndices = concatMap (\y -> map (\x -> (x, y)) [(y + halfSize) `mod` size,((y + halfSize) `mod` size) + size..sideLen - 1]) yIndices
+    tupleIndices = concatMap (\y -> zip (xIndices y) (repeat y)) yIndices
+    xIndices = takeWhile (< sideLen - 1) . Prelude.iterate (+ size) .
+        (`mod` size) . (+) halfSize
     halfSize = size `div` 2
     diamond (x, y) = do
         a <- MV.read heightMap $ unsafeVectorIndex (x, y) sideLen
