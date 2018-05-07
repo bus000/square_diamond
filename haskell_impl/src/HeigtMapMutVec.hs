@@ -17,7 +17,7 @@ import qualified Prelude
 -- TODO: Add internal type containing a mutable vector.
 data HeightMap = HeightMap !Int !(V.Vector Double)
 
-createMap :: (C.PrimMonad m, C.MonadRandom m) => Int -> m HeightMap
+createMap :: (Integral a, C.MonadRandom m, C.PrimMonad m) => a -> m HeightMap
 createMap n = do
     heights <- randomArray (sideLen * sideLen) (-1.0) 1.0
 
@@ -40,7 +40,6 @@ step sideLen heightMap size = do
     squareStep sideLen heightMap size
     diamondStep sideLen heightMap size
 
--- TODO: Try some sort of parallel map.
 squareStep :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a) => Int
     -- ^ The side length of the map.
     -> V.MVector (C.PrimState m) a
