@@ -17,87 +17,92 @@ import qualified Prelude
 -- TODO: Add internal type containing a mutable vector.
 data HeightMap = HeightMap !Int !(V.Vector Double)
 
+data IntHeightMap a m = IntHeightMap !Int !(MV.MVector (C.PrimState m) a)
+
 createMap :: (Integral a, C.MonadRandom m, C.PrimMonad m) => a -> m HeightMap
 createMap n = do
     heights <- randomArray (sideLen * sideLen) (-1.0) 1.0
 
-    applyCorners sideLen abs heights
-    C.mapM_ (step sideLen heights) stepSizes
+    let heightMap = IntHeightMap sideLen heights
 
-    HeightMap sideLen <$> V.freeze heights
+    applyCorners heightMap abs
+    C.mapM_ (step heightMap) stepSizes
+
+    HeightMap sideLen <$> V.unsafeFreeze heights
   where
     sideLen = (2^n) + 1
     stepSizes = takeWhile (> 1) . Prelude.iterate (`div` 2) $ sideLen - 1
 
-step :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a) => Int
-    -- ^ The side length of the map.
-    -> V.MVector (C.PrimState m) a
+step :: (Fractional a, V.Unbox a, Ord a, C.PrimMonad m) => IntHeightMap a m
     -- ^ The map.
     -> Int
     -- ^ The step size.
     -> m ()
-step sideLen heightMap size = do
-    squareStep sideLen heightMap size
-    diamondStep sideLen heightMap size
+step heightMap size = squareStep heightMap size >> diamondStep heightMap size
 
-squareStep :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a) => Int
-    -- ^ The side length of the map.
-    -> V.MVector (C.PrimState m) a
+squareStep :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a) => IntHeightMap a m
     -- ^ The map.
     -> Int
     -- ^ The step size.
     -> m ()
-squareStep sideLen heightMap size = mapM_ square tupleIndices
+squareStep hmap size = mapM_ square tupleIndices
   where
+    sideLen = getSideLen hmap
     xIndices = [halfSize, size + halfSize..sideLen - 1]
     yIndices = [halfSize, size + halfSize..sideLen - 1]
     tupleIndices = (,) <$> xIndices <*> yIndices
     halfSize = size `div` 2
     square (x, y) = do
-        a <- MV.read heightMap $ unsafeVectorIndex (x, y) sideLen
-        b <- readDefault sideLen heightMap (x - halfSize, y - halfSize)
-        c <- readDefault sideLen heightMap (x - halfSize, y + halfSize)
-        d <- readDefault sideLen heightMap (x + halfSize, y - halfSize)
-        e <- readDefault sideLen heightMap (x + halfSize, y + halfSize)
+        a <- read hmap (x, y)
+        b <- readDefault hmap (x - halfSize, y - halfSize) 0
+        c <- readDefault hmap (x - halfSize, y + halfSize) 0
+        d <- readDefault hmap (x + halfSize, y - halfSize) 0
+        e <- readDefault hmap (x + halfSize, y + halfSize) 0
 
-        writeBounded sideLen heightMap b c d e a (x, y)
+        writeBounded hmap b c d e a (x, y)
 
-diamondStep :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a) => Int
-    -- ^ The side length of the map.
-    -> V.MVector (C.PrimState m) a
+diamondStep :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a) => IntHeightMap a m
     -- ^ The map.
     -> Int
     -- ^ The step size.
     -> m ()
-diamondStep sideLen heightMap size = mapM_ diamond tupleIndices
+diamondStep hmap size = mapM_ diamond tupleIndices
   where
+    sideLen = getSideLen hmap
     yIndices = [0, halfSize..sideLen-1]
     tupleIndices = concatMap (\y -> zip (xIndices y) (repeat y)) yIndices
     xIndices = takeWhile (< sideLen - 1) . Prelude.iterate (+ size) .
         (`mod` size) . (+) halfSize
     halfSize = size `div` 2
     diamond (x, y) = do
-        a <- MV.read heightMap $ unsafeVectorIndex (x, y) sideLen
-        b <- readDefault sideLen heightMap (x, y - halfSize)
-        c <- readDefault sideLen heightMap (x - halfSize, y)
-        d <- readDefault sideLen heightMap (x, y + halfSize)
-        e <- readDefault sideLen heightMap (x + halfSize, y)
+        a <- read hmap (x, y)
+        b <- readDefault hmap (x, y - halfSize) 0
+        c <- readDefault hmap (x - halfSize, y) 0
+        d <- readDefault hmap (x, y + halfSize) 0
+        e <- readDefault hmap (x + halfSize, y) 0
 
-        writeBounded sideLen heightMap b c d e a (x, y)
+        writeBounded hmap b c d e a (x, y)
 
-readDefault :: (Fractional a, V.Unbox a, C.PrimMonad m) => Int
-    -- ^ Side length of the map.
-    -> V.MVector (C.PrimState m) a
+readDefault :: (V.Unbox a, C.PrimMonad m) => IntHeightMap a m
+    -- ^ The map.
+    -> (Int, Int)
+    -- ^ Index to get.
+    -> a
+    -- ^ Default value to return if index is outside the map.
+    -> m a
+readDefault (IntHeightMap sideLen heightMap) (x, y) d =
+    maybe (pure d) (MV.read heightMap) $ vectorIndex (x, y) sideLen
+
+read :: (V.Unbox a, C.PrimMonad m) => IntHeightMap a m
     -- ^ The map.
     -> (Int, Int)
     -- ^ Index to get.
     -> m a
-readDefault sideLen heightMap (x, y) =
-    maybe (pure 0.0) (MV.read heightMap) $ vectorIndex (x, y) sideLen
+read (IntHeightMap sideLen heightMap) (x, y) =
+    MV.read heightMap $ unsafeVectorIndex (x, y) sideLen
 
-writeBounded :: (Fractional a, Ord a, V.Unbox a, C.PrimMonad m) => Int
-    -- ^ Sidelength of map.
-    -> V.MVector (C.PrimState m) a
+writeBounded :: (Fractional a, Ord a, V.Unbox a, C.PrimMonad m) =>
+       IntHeightMap a m
     -- ^ The map.
     -> a
     -- ^ Value 1.
@@ -112,7 +117,7 @@ writeBounded :: (Fractional a, Ord a, V.Unbox a, C.PrimMonad m) => Int
     -> (Int, Int)
     -- ^ Where to write the new value.
     -> m ()
-writeBounded sideLen heightMap val1 val2 val3 val4 random (x, y) =
+writeBounded (IntHeightMap sideLen heightMap) val1 val2 val3 val4 random (x, y) =
     MV.write heightMap (unsafeVectorIndex (x, y) sideLen) (bound newVal)
   where
     -- TODO: Scale random from sideLen.
@@ -143,16 +148,14 @@ randomArray :: (C.PrimMonad m, C.MonadRandom m, C.Random a, V.Unbox a) => Int
     -> m (MV.MVector (C.PrimState m) a)
 randomArray n lower upper = MV.replicateM n $ C.getRandomR (lower, upper)
 
-applyCorners :: (V.Unbox a, C.PrimMonad m) => Int
-    -- ^ The side length of the map.
+applyCorners :: (V.Unbox a, C.PrimMonad m) => IntHeightMap a m
+    -- ^ The map.
     -> (a -> a)
     -- ^ Function to apply to corners of the map.
-    -> V.MVector (C.PrimState m) a
-    -- ^ The map.
     -> m ()
-applyCorners sideLen f v = mapM_ (MV.modify v f) cornerIndices
+applyCorners (IntHeightMap sideLen v) f = mapM_ (MV.modify v f) cornerIndices
   where
-    cornerIndices = map (Maybe.fromJust . (flip vectorIndex) sideLen) -- TODO: Use unsafe vectorIndex.
+    cornerIndices = map (flip unsafeVectorIndex $ sideLen)
         [ (0, 0)
         , (sideLen - 1, 0)
         , (0, sideLen - 1)
@@ -179,3 +182,6 @@ saveMap (HeightMap sideLen heightMap) path = R.runIL $ do
     toThreeDim current (R.Z :. x :. y :. 1) = let (_, v, _) = current (R.ix2 x y) in v
     toThreeDim current (R.Z :. x :. y :. 2) = let (_, _, v) = current (R.ix2 x y) in v
     toThreeDim _ _ = error "Third dimension should be either 0, 1 or 2"
+
+getSideLen :: IntHeightMap a m -> Int
+getSideLen (IntHeightMap sideLen _) = sideLen

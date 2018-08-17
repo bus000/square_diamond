@@ -39,10 +39,12 @@ main = do
 
 
     -- With vectors.
-    [size] <- Sys.getArgs
+    {-[size] <- Sys.getArgs-}
+    let size = "10"
 
     heightMap <- HMMV.createMap (read size)
 
     {-putStr . pack . PP.render . PP.pPrint $ heightmap-}
     {-putStr . HMMV.showMap $ heightMap-}
     HMMV.saveMap heightMap "somefile.png"
+    putStrLn "done"

@@ -14,7 +14,7 @@ executable diamond-square
   GHC-Options:         -Wall -Odph -rtsopts -threaded -fno-liberate-case
                        -funfolding-use-threshold1000
                        -funfolding-keeness-factor1000 -optlo-O3
-                       -with-rtsopts=-N
+                       -with-rtsopts=-N -O3
   build-depends:       base >=4.8 && <4.9,
                        repa >=3.4,
                        repa-algorithms >=3.4,
