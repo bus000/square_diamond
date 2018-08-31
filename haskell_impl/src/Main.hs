@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
@@ -28,8 +26,8 @@ main = do
 
 {- | Parse arguments given to program. Exit on help requests, version requests
  - and if arguments are invalid. Otherwise return the parsed configuration. -}
-parseArguments :: IO Configuration
-parseArguments = CMD.processArgs arguments >>= getConfigurationOrExit
+parseArguments :: MonadIO m => m Configuration
+parseArguments = liftIO (CMD.processArgs arguments) >>= getConfigurationOrExit
 
 {- | Configuration used to decide how to run the program. The configuration is
  - created from arguments given to the program. -}
