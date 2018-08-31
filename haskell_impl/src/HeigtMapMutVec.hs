@@ -14,7 +14,6 @@ import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector.Unboxed.Mutable as MV
 import qualified Prelude
 
--- TODO: Add internal type containing a mutable vector.
 data HeightMap = HeightMap !Int !(V.Vector Double)
 
 data IntHeightMap a m = IntHeightMap !Int !(MV.MVector (C.PrimState m) a)
@@ -59,7 +58,7 @@ squareStep hmap size = mapM_ square tupleIndices
         d <- readDefault hmap (x + halfSize, y - halfSize) 0
         e <- readDefault hmap (x + halfSize, y + halfSize) 0
 
-        writeBounded hmap b c d e a (x, y)
+        writeBounded hmap b c d e a (x, y) size
 
 diamondStep :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a) => IntHeightMap a m
     -- ^ The map.
@@ -81,7 +80,7 @@ diamondStep hmap size = mapM_ diamond tupleIndices
         d <- readDefault hmap (x, y + halfSize) 0
         e <- readDefault hmap (x + halfSize, y) 0
 
-        writeBounded hmap b c d e a (x, y)
+        writeBounded hmap b c d e a (x, y) size
 
 readDefault :: (V.Unbox a, C.PrimMonad m) => IntHeightMap a m
     -- ^ The map.
@@ -116,13 +115,15 @@ writeBounded :: (Fractional a, Ord a, V.Unbox a, C.PrimMonad m) =>
     -- ^ Random value between -1 and 1.
     -> (Int, Int)
     -- ^ Where to write the new value.
+    -> Int
+    -- ^ Current step size.
     -> m ()
-writeBounded (IntHeightMap sideLen heightMap) val1 val2 val3 val4 random (x, y) =
-    MV.write heightMap (unsafeVectorIndex (x, y) sideLen) (bound newVal)
+writeBounded (IntHeightMap sideLen heightMap) val1 val2 val3 val4 random pos stepSize =
+    MV.write heightMap (unsafeVectorIndex pos sideLen) (bound newVal)
   where
-    -- TODO: Scale random from sideLen.
-    newVal = ((val1 + val2 + val3 + val4) / 4) + 0.1 * random
+    newVal = ((val1 + val2 + val3 + val4) / 4) + scale * random
     bound = max 0 . min 1
+    scale = (fromIntegral stepSize) / (fromIntegral (sideLen - 1)) -- TODO: Add roughness parameter.
 
 vectorIndex :: (Int, Int) -> Int -> Maybe Int
 vectorIndex (x, y) sideLen
@@ -169,6 +170,7 @@ showMap (HeightMap sideLen dat) = concatMap showLine lines ++ "\n"
     indices = [0, sideLen .. sideLen * sideLen - 1]
     showLine = (++) "\n" . show . V.toList
 
+-- TODO: Stop using repa and use friday instead.
 saveMap :: HeightMap -> FilePath -> IO ()
 saveMap (HeightMap sideLen heightMap) path = R.runIL $ do
     image <- R.RGB <$> R.copyP rgb
