@@ -1,15 +1,26 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
-module HeigtMapMutVec where -- TODO: Fix name.
+module HeigtMapMutVec
+    ( HeightMap
+    , createMap
+    , createMapWithConfiguration
+    , saveMap
+    , showMap
+
+    , Configuration
+    , createConfiguration
+    ) where -- TODO: Fix name.
 
 import ClassyPrelude
 import qualified Control.Monad as C
 import qualified Control.Monad.Primitive as C
 import qualified Control.Monad.Random as C
+import qualified Control.Monad.Reader as C
 import qualified Data.Array.Repa as R
 import Data.Array.Repa ((:.)(..))
 import qualified Data.Array.Repa.Algorithms.Pixel as R
 import qualified Data.Array.Repa.IO.DevIL as R
-import qualified Data.Maybe as Maybe
+import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector.Unboxed.Mutable as MV
 import qualified Prelude
@@ -19,7 +30,21 @@ data HeightMap = HeightMap !Int !(V.Vector Double)
 data IntHeightMap a m = IntHeightMap !Int !(MV.MVector (C.PrimState m) a)
 
 createMap :: (Integral a, C.MonadRandom m, C.PrimMonad m) => a -> m HeightMap
-createMap n = do
+createMap n = createMapWithConfiguration n defaultConfiguration
+
+createMapWithConfiguration
+    :: (Integral a, C.MonadRandom m, C.PrimMonad m)
+    => a
+    -> Configuration Double
+    -> m HeightMap
+createMapWithConfiguration n config = C.runReaderT (createMapInternal n) config
+
+createMapInternal
+    :: (Integral a, C.MonadRandom m, C.PrimMonad m
+       , C.MonadReader (Configuration Double) m)
+    => a
+    -> m HeightMap
+createMapInternal n = do
     heights <- randomArray (sideLen * sideLen) (-1.0) 1.0
 
     let heightMap = IntHeightMap sideLen heights
@@ -32,14 +57,32 @@ createMap n = do
     sideLen = (2^n) + 1
     stepSizes = takeWhile (> 1) . Prelude.iterate (`div` 2) $ sideLen - 1
 
-step :: (Fractional a, V.Unbox a, Ord a, C.PrimMonad m) => IntHeightMap a m
+data Configuration a = Configuration
+    { _roughness :: a
+    }
+
+defaultConfiguration :: Fractional a => Configuration a
+defaultConfiguration = Configuration 1.0
+
+createConfiguration :: (Fractional a, Ord a) => a -> Either T.Text (Configuration a)
+createConfiguration roughness
+    | roughness >= 0.0 && roughness <= 1.0 = Right $ Configuration roughness
+    | otherwise = Left "Roughness should be between 0 and 1."
+
+step
+    :: (Fractional a, V.Unbox a, Ord a, C.PrimMonad m
+       , C.MonadReader (Configuration a) m)
+    => IntHeightMap a m
     -- ^ The map.
     -> Int
     -- ^ The step size.
     -> m ()
 step heightMap size = squareStep heightMap size >> diamondStep heightMap size
 
-squareStep :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a) => IntHeightMap a m
+squareStep
+    :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a
+       , C.MonadReader (Configuration a) m)
+    => IntHeightMap a m
     -- ^ The map.
     -> Int
     -- ^ The step size.
@@ -60,7 +103,10 @@ squareStep hmap size = mapM_ square tupleIndices
 
         writeBounded hmap b c d e a (x, y) size
 
-diamondStep :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a) => IntHeightMap a m
+diamondStep
+    :: (Fractional a, V.Unbox a, C.PrimMonad m, Ord a
+       , C.MonadReader (Configuration a) m)
+    => IntHeightMap a m
     -- ^ The map.
     -> Int
     -- ^ The step size.
@@ -100,8 +146,10 @@ read :: (V.Unbox a, C.PrimMonad m) => IntHeightMap a m
 read (IntHeightMap sideLen heightMap) (x, y) =
     MV.read heightMap $ unsafeVectorIndex (x, y) sideLen
 
-writeBounded :: (Fractional a, Ord a, V.Unbox a, C.PrimMonad m) =>
-       IntHeightMap a m
+writeBounded
+    :: (Fractional a, Ord a, V.Unbox a, C.PrimMonad m
+       , C.MonadReader (Configuration a) m)
+    => IntHeightMap a m
     -- ^ The map.
     -> a
     -- ^ Value 1.
@@ -118,12 +166,13 @@ writeBounded :: (Fractional a, Ord a, V.Unbox a, C.PrimMonad m) =>
     -> Int
     -- ^ Current step size.
     -> m ()
-writeBounded (IntHeightMap sideLen heightMap) val1 val2 val3 val4 random pos stepSize =
+writeBounded (IntHeightMap sideLen heightMap) val1 val2 val3 val4 random pos stepSize = do
+    roughness <- C.asks _roughness
+    let newVal = ((val1 + val2 + val3 + val4) / 4) + scale * random * roughness
     MV.write heightMap (unsafeVectorIndex pos sideLen) (bound newVal)
   where
-    newVal = ((val1 + val2 + val3 + val4) / 4) + scale * random
     bound = max 0 . min 1
-    scale = (fromIntegral stepSize) / (fromIntegral (sideLen - 1)) -- TODO: Add roughness parameter.
+    scale = fromIntegral stepSize / fromIntegral (sideLen - 1) -- TODO: Add roughness parameter.
 
 vectorIndex :: (Int, Int) -> Int -> Maybe Int
 vectorIndex (x, y) sideLen
@@ -133,9 +182,6 @@ vectorIndex (x, y) sideLen
 
 unsafeVectorIndex :: (Int, Int) -> Int -> Int
 unsafeVectorIndex (x, y) sideLen = x * sideLen + y
-
-numElemns :: HeightMap -> Int
-numElemns (HeightMap _ heightMap) = V.length heightMap
 
 {- | Create an array of the type and shape given with random values between
  - below and above. If called as randomArray shape lower upper an array of shape
@@ -156,17 +202,18 @@ applyCorners :: (V.Unbox a, C.PrimMonad m) => IntHeightMap a m
     -> m ()
 applyCorners (IntHeightMap sideLen v) f = mapM_ (MV.modify v f) cornerIndices
   where
-    cornerIndices = map (flip unsafeVectorIndex $ sideLen)
+    cornerIndices = map (`unsafeVectorIndex` sideLen)
         [ (0, 0)
         , (sideLen - 1, 0)
         , (0, sideLen - 1)
         , (sideLen - 1, sideLen - 1)
         ]
 
+-- TODO: Change to text.
 showMap :: HeightMap -> String
-showMap (HeightMap sideLen dat) = concatMap showLine lines ++ "\n"
+showMap (HeightMap sideLen dat) = concatMap showLine mylines ++ "\n"
   where
-    lines = map (\i -> V.slice i sideLen dat) indices
+    mylines = map (\i -> V.slice i sideLen dat) indices
     indices = [0, sideLen .. sideLen * sideLen - 1]
     showLine = (++) "\n" . show . V.toList
 
