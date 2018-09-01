@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
-module HeigtMapMutVec
+module HeightMap
     ( HeightMap
     , createMap
     , createMapWithConfiguration

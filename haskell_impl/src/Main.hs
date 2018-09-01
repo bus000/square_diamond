@@ -6,7 +6,7 @@ import qualified Data.Char as Char
 import qualified Data.Maybe as M
 import qualified Data.Text as T
 import qualified Data.Version as Sys
-import qualified HeigtMapMutVec as HM
+import qualified HeightMap as HM
 import qualified Paths_diamond_square as Sys
 import qualified Prelude
 import qualified System.Console.CmdArgs.Explicit as CMD
