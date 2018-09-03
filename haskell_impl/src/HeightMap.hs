@@ -9,7 +9,7 @@ module HeightMap
 
     , Configuration
     , createConfiguration
-    ) where -- TODO: Fix name.
+    ) where
 
 import ClassyPrelude
 import qualified Control.Monad as C
@@ -25,24 +25,40 @@ import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector.Unboxed.Mutable as MV
 import qualified Prelude
 
+{- | Represents a heightmap. The heightmap is a vector of doubles between 0 and
+ - 1. 0 is the lowest height and 1 is the highest. The heightmap is two
+ - dimensional, indices in the two dimensional space (x, y) can be translated
+ - into vector indices via vectorIndex and unsafeVectorIndex. -}
 data HeightMap = HeightMap !Int !(V.Vector Double)
 
+{- | Internal datatype representing a heightmap. Only difference between the
+ - internal and external maps is that the internal map is a mutable vector. -}
 data IntHeightMap a m = IntHeightMap !Int !(MV.MVector (C.PrimState m) a)
 
-createMap :: (Integral a, C.MonadRandom m, C.PrimMonad m) => a -> m HeightMap
+{- | Create a heightmap using the default configuration. -}
+createMap
+    :: (Integral a, C.MonadRandom m, C.PrimMonad m)
+    => a
+    -- ^ The side length of the map generated is 2^a+1.
+    -> m HeightMap
 createMap n = createMapWithConfiguration n defaultConfiguration
 
+{- | Create a heightmap using the configuration given. -}
 createMapWithConfiguration
     :: (Integral a, C.MonadRandom m, C.PrimMonad m)
     => a
+    -- ^ The side length of the map generated is 2^a+1.
     -> Configuration Double
+    -- ^ The configuration to use for the generation.
     -> m HeightMap
 createMapWithConfiguration n config = C.runReaderT (createMapInternal n) config
 
+{- | Create a heightmap. -}
 createMapInternal
     :: (Integral a, C.MonadRandom m, C.PrimMonad m
        , C.MonadReader (Configuration Double) m)
     => a
+    -- ^ The side length of the map generated is 2^a+1.
     -> m HeightMap
 createMapInternal n = do
     heights <- randomArray (sideLen * sideLen) (-1.0) 1.0
@@ -96,10 +112,10 @@ squareStep hmap size = mapM_ square tupleIndices
     halfSize = size `div` 2
     square (x, y) = do
         a <- read hmap (x, y)
-        b <- readDefault hmap (x - halfSize, y - halfSize) 0
-        c <- readDefault hmap (x - halfSize, y + halfSize) 0
-        d <- readDefault hmap (x + halfSize, y - halfSize) 0
-        e <- readDefault hmap (x + halfSize, y + halfSize) 0
+        b <- readDefault hmap (x - halfSize, y - halfSize) 0.5
+        c <- readDefault hmap (x - halfSize, y + halfSize) 0.5
+        d <- readDefault hmap (x + halfSize, y - halfSize) 0.5
+        e <- readDefault hmap (x + halfSize, y + halfSize) 0.5
 
         writeBounded hmap b c d e a (x, y) size
 
@@ -121,10 +137,10 @@ diamondStep hmap size = mapM_ diamond tupleIndices
     halfSize = size `div` 2
     diamond (x, y) = do
         a <- read hmap (x, y)
-        b <- readDefault hmap (x, y - halfSize) 0
-        c <- readDefault hmap (x - halfSize, y) 0
-        d <- readDefault hmap (x, y + halfSize) 0
-        e <- readDefault hmap (x + halfSize, y) 0
+        b <- readDefault hmap (x, y - halfSize) 0.5
+        c <- readDefault hmap (x - halfSize, y) 0.5
+        d <- readDefault hmap (x, y + halfSize) 0.5
+        e <- readDefault hmap (x + halfSize, y) 0.5
 
         writeBounded hmap b c d e a (x, y) size
 
