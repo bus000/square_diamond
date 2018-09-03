@@ -116,7 +116,7 @@ diamondStep hmap size = mapM_ diamond tupleIndices
     sideLen = getSideLen hmap
     yIndices = [0, halfSize..sideLen-1]
     tupleIndices = concatMap (\y -> zip (xIndices y) (repeat y)) yIndices
-    xIndices = takeWhile (< sideLen - 1) . Prelude.iterate (+ size) .
+    xIndices = takeWhile (<= sideLen - 1) . Prelude.iterate (+ size) .
         (`mod` size) . (+) halfSize
     halfSize = size `div` 2
     diamond (x, y) = do
