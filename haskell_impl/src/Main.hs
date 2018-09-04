@@ -2,6 +2,7 @@
 module Main where
 
 import ClassyPrelude
+import qualified Data.ByteString as B
 import qualified Data.Char as Char
 import qualified Data.Maybe as M
 import qualified Data.Text as T
@@ -22,9 +23,9 @@ main = do
 
     heightMap <- HM.createMapWithConfiguration sideLen mapConfiguration
 
-    case configuration of
-        StdoutConfig _ _ -> HM.saveMap heightMap "stdout"
-        FileConfig _ _ outfile -> HM.saveMap heightMap outfile
+    case HM.saveMap heightMap of
+        Left err -> hSayShow stderr err >> Sys.exitWith (Sys.ExitFailure (-1))
+        Right bs -> saveBS configuration bs
 
 {- | Parse arguments given to program. Exit on help requests, version requests
  - and if arguments are invalid. Otherwise return the parsed configuration. -}
@@ -35,9 +36,9 @@ parseArguments = liftIO (CMD.processArgs arguments) >>= getConfigurationOrExit
  - created from arguments given to the program. -}
 data Configuration
     -- | Write the generated map to stdout.
-    = StdoutConfig SideLen (HM.Configuration Double)
+    = StdoutConfig SideLen (HM.Configuration Roughness)
     -- | Write the generated map to a file with the given name.
-    | FileConfig SideLen (HM.Configuration Double) FilePath
+    | FileConfig SideLen (HM.Configuration Roughness) FilePath
 
 -- | The side length of a map.
 type SideLen = Int
@@ -60,6 +61,18 @@ getConfiguration
     -> HM.Configuration Double
 getConfiguration (StdoutConfig _ config) = config
 getConfiguration (FileConfig _ config _) = config
+
+{- | Save a bytestring to either a file or stdout depending on the
+ - configuration given. -}
+saveBS
+    :: MonadIO m
+    => Configuration
+    -- ^ Configuration to determine output location.
+    -> B.ByteString
+    -- ^ Bytestring to save.
+    -> m ()
+saveBS (FileConfig _ _ outfile) = writeFile outfile
+saveBS (StdoutConfig _ _) = hPut stdout
 
 {- | Configuration properties parsed from the command line given. These
  - properties should be transformed into an actual configuration via
@@ -123,7 +136,9 @@ arguments = CMD.mode "square-diamond" defaultConfig helpMsg argParse flags
  - 1. _help is true (print help message and exit with ExitSuccess),
  - 2. _version is true (print version and exit with ExitSuccess),
  - 3. arguments are invalid (print help message and exit with ExitFailure). -}
-getConfigurationOrExit :: MonadIO m => Arguments
+getConfigurationOrExit
+    :: MonadIO m
+    => Arguments
     -- ^ Arguments parsed from the command line.
     -> m Configuration
 getConfigurationOrExit (Arguments _ _ _ True _) = do

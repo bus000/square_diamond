@@ -16,14 +16,16 @@ import qualified Control.Monad as C
 import qualified Control.Monad.Primitive as C
 import qualified Control.Monad.Random as C
 import qualified Control.Monad.Reader as C
-import qualified Data.Array.Repa as R
-import Data.Array.Repa ((:.)(..))
-import qualified Data.Array.Repa.Algorithms.Pixel as R
-import qualified Data.Array.Repa.IO.DevIL as R
+import qualified Data.ByteString as B
 import qualified Data.Text as T
+import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector.Unboxed.Mutable as MV
 import qualified Prelude
+import qualified Vision.Image.Grey.Type as FD
+import qualified Vision.Image.Storage.DevIL as FD
+import qualified Vision.Image.Type as FD
+import qualified Vision.Primitive.Shape as FD
 
 {- | Represents a heightmap. The heightmap is a vector of doubles between 0 and
  - 1. 0 is the lowest height and 1 is the highest. The heightmap is two
@@ -279,20 +281,21 @@ showMap (HeightMap sideLen dat) = concatMap showLine mylines ++ "\n"
     indices = [0, sideLen .. sideLen * sideLen - 1]
     showLine = (++) "\n" . T.pack . show . V.toList
 
--- TODO: Stop using repa and use friday instead.
-saveMap :: HeightMap -> FilePath -> IO ()
-saveMap (HeightMap sideLen heightMap) path = R.runIL $ do
-    image <- R.RGB <$> R.copyP rgb
-    R.writeImage path image
+{- | Save a heightmap to a bytestring in the PNG format. -}
+saveMap
+    :: HeightMap
+    -- ^ The heightmap to save.
+    -> Either FD.StorageError B.ByteString
+saveMap (HeightMap sideLen heightMap) = FD.saveBS FD.PNG greyImage
   where
-    array = R.fromUnboxed (R.Z :. sideLen :. sideLen) heightMap
-    rgbTuple = R.map R.rgb8OfGreyDouble array
-    rgb = R.traverse rgbTuple (\(R.Z :. x :. y) -> R.ix3 x y 3) toThreeDim
-
-    toThreeDim current (R.Z :. x :. y :. 0) = let (v, _, _) = current (R.ix2 x y) in v
-    toThreeDim current (R.Z :. x :. y :. 1) = let (_, v, _) = current (R.ix2 x y) in v
-    toThreeDim current (R.Z :. x :. y :. 2) = let (_, _, v) = current (R.ix2 x y) in v
-    toThreeDim _ _ = error "Third dimension should be either 0, 1 or 2"
+    greyImage = FD.GreyStorage $ FD.Manifest imageSize pixelVector
+    imageSize = FD.ix2 sideLen sideLen
+    pixelVector
+        = VS.map FD.GreyPixel
+        . VS.fromList
+        . V.toList
+        . V.map (round . (*255))
+        $ heightMap
 
 {- | Get the side length of a heightmap. -}
 getSideLen
