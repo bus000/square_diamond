@@ -2,10 +2,8 @@
 module Main where
 
 import ClassyPrelude
-import qualified Data.ByteString as B
 import qualified Data.Char as Char
 import qualified Data.Maybe as M
-import qualified Data.Text as T
 import qualified Data.Version as Sys
 import qualified HeightMap as HM
 import qualified Paths_diamond_square as Sys
@@ -68,7 +66,7 @@ saveBS
     :: MonadIO m
     => Configuration
     -- ^ Configuration to determine output location.
-    -> B.ByteString
+    -> ByteString
     -- ^ Bytestring to save.
     -> m ()
 saveBS (FileConfig _ _ outfile) = writeFile outfile
@@ -145,9 +143,9 @@ getConfigurationOrExit (Arguments _ _ _ True _) = do
     hSayShow stderr $ CMD.helpText [] CMD.HelpFormatAll arguments
     liftIO $ Sys.exitWith Sys.ExitSuccess
 getConfigurationOrExit (Arguments _ _ _ _ True) = do
-    hSay stderr $ T.concat
+    hSay stderr $ concat
         [ "diamond-square v"
-        , T.pack $ Sys.showVersion Sys.version
+        , pack $ Sys.showVersion Sys.version
         , " (C) Magnus Stavngaard"
         ]
     liftIO $ Sys.exitWith Sys.ExitSuccess

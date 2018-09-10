@@ -16,8 +16,6 @@ import qualified Control.Monad as C
 import qualified Control.Monad.Primitive as C
 import qualified Control.Monad.Random as C
 import qualified Control.Monad.Reader as C
-import qualified Data.ByteString as B
-import qualified Data.Text as T
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector.Unboxed.Mutable as MV
@@ -31,24 +29,26 @@ import qualified Vision.Primitive.Shape as FD
  - 1. 0 is the lowest height and 1 is the highest. The heightmap is two
  - dimensional, indices in the two dimensional space (x, y) can be translated
  - into vector indices via vectorIndex and unsafeVectorIndex. -}
-data HeightMap = HeightMap !Int !(V.Vector Double)
+data HeightMap a = HeightMap !Int !(V.Vector a)
 
 {- | Create a heightmap using the default configuration. -}
 createMap
-    :: (Integral a, C.MonadRandom m, C.PrimMonad m)
+    :: (Integral a, C.MonadRandom m, C.PrimMonad m, Fractional n, V.Unbox n
+       , C.Random n, Ord n)
     => a
     -- ^ The side length of the map generated is 2^a+1.
-    -> m HeightMap
+    -> m (HeightMap n)
 createMap n = createMapWithConfiguration n defaultConfiguration
 
 {- | Create a heightmap using the configuration given. -}
 createMapWithConfiguration
-    :: (Integral a, C.MonadRandom m, C.PrimMonad m)
+    :: (Integral a, C.MonadRandom m, C.PrimMonad m, Fractional n, V.Unbox n
+       , C.Random n, Ord n)
     => a
     -- ^ The side length of the map generated is 2^a+1.
-    -> Configuration Double
+    -> Configuration n
     -- ^ The configuration to use for the generation.
-    -> m HeightMap
+    -> m (HeightMap n)
 createMapWithConfiguration n = C.runReaderT (createMapInternal n)
 
 {- | Configuration used to generate height map. Currently only consist of the
@@ -67,7 +67,7 @@ createConfiguration
     :: (Fractional a, Ord a)
     => a
     -- ^ The roughness of the map between 0 and 1 (inclusive).
-    -> Either T.Text (Configuration a)
+    -> Either Text (Configuration a)
 createConfiguration roughness
     | roughness >= 0.0 && roughness <= 1.0 = Right $ Configuration roughness
     | otherwise = Left "Roughness should be between 0 and 1."
@@ -78,11 +78,11 @@ data IntHeightMap a m = IntHeightMap !Int !(MV.MVector (C.PrimState m) a)
 
 {- | Create a heightmap. -}
 createMapInternal
-    :: (Integral a, C.MonadRandom m, C.PrimMonad m
-       , C.MonadReader (Configuration Double) m)
+    :: (Integral a, C.MonadRandom m, C.PrimMonad m, Fractional n, V.Unbox n
+       , C.Random n, Ord n, C.MonadReader (Configuration n) m)
     => a
     -- ^ The side length of the map generated is 2^a+1.
-    -> m HeightMap
+    -> m (HeightMap n)
 createMapInternal n = do
     heights <- randomArray (sideLen * sideLen) (-1.0) 1.0
 
@@ -272,20 +272,22 @@ applyCorners (IntHeightMap sideLen v) f = mapM_ (MV.modify v f) cornerIndices
 
 {- | Show a heightmap as text. -}
 showMap
-    :: HeightMap
+    :: (V.Unbox n, Show n)
+    => HeightMap n
     -- ^ The heightmap to show.
-    -> T.Text
+    -> Text
 showMap (HeightMap sideLen dat) = concatMap showLine mylines ++ "\n"
   where
     mylines = map (\i -> V.slice i sideLen dat) indices
     indices = [0, sideLen .. sideLen * sideLen - 1]
-    showLine = (++) "\n" . T.pack . show . V.toList
+    showLine = (++) "\n" . pack . show . V.toList
 
 {- | Save a heightmap to a bytestring in the PNG format. -}
 saveMap
-    :: HeightMap
+    :: (V.Unbox n, RealFrac n)
+    => HeightMap n
     -- ^ The heightmap to save.
-    -> Either FD.StorageError B.ByteString
+    -> Either FD.StorageError ByteString
 saveMap (HeightMap sideLen heightMap) = FD.saveBS FD.PNG greyImage
   where
     greyImage = FD.GreyStorage $ FD.Manifest imageSize pixelVector
